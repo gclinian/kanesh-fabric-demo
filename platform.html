@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>雲端平台 · DPP 發行 · 互動原型</title>
+<style>
+  :root{
+    --paper:#f6f3ec; --surface:#fff; --surface2:#fbfaf6; --ink:#20211c; --soft:#44463e;
+    --muted:#76776d; --line:#e4dfd2; --lineSoft:#efeadd;
+    --accent:#1d4ed8; --accentD:#1e40af; --teal:#0d9488;
+    --good:#15803d; --goodBg:#eaf5ec; --warn:#b45309; --warnBg:#fbf1e3;
+    --jewel:#9333ea; --jewelBg:#f4ecfb; --info:#eef0fb;
+    --radius:13px; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(40,38,30,.06);
+    --font:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:var(--paper);color:var(--ink);line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased}
+  .topbar{position:sticky;top:0;z-index:30;background:var(--surface);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;padding:10px 18px;border-top:3px solid var(--accent)}
+  .topbar .brand{font-weight:800;font-size:15px}
+  .topbar .role{font-size:13px;color:var(--muted)}
+  .topbar .spacer{flex:1}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;
+    padding:3px 10px;background:var(--goodBg);color:var(--good);border:1px solid #cfe6d4}
+  .chip.demo{background:var(--info);color:var(--accent);border-color:#d9ddf6}
+  .chip.warn{background:var(--warnBg);color:var(--warn);border-color:#f0dcc0}
+  .layout{display:flex;align-items:flex-start}
+  .side{width:236px;flex:none;border-right:1px solid var(--line);background:var(--surface2);
+    min-height:calc(100vh - 56px);position:sticky;top:56px;padding:12px 10px}
+  .nav a{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:10px;text-decoration:none;
+    color:var(--soft);font-size:14px;cursor:pointer;margin:2px 0}
+  .nav a:hover{background:var(--lineSoft);color:var(--ink)}
+  .nav a.on{background:var(--accent);color:#fff}
+  .nav a .b{margin-left:auto;font-size:11px;font-weight:700;background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;
+    animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}50%{box-shadow:0 0 0 5px rgba(220,38,38,0)}}
+  .nav a.on .b{background:rgba(255,255,255,.3);animation:none}
+  .nav .grp{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:12px 12px 4px}
+  main{flex:1;min-width:0;padding:24px 30px 80px;max-width:1040px}
+  h1{font-size:24px;margin:4px 0 4px}
+  h2{font-size:18px;margin:26px 0 8px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{color:var(--soft);margin:8px 0}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--lineSoft);padding:1px 6px;border-radius:5px;color:#5b4636}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);margin:12px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+  .callout{border-radius:11px;padding:12px 15px;margin:12px 0;font-size:13.5px;border:1px solid var(--line);background:var(--surface2)}
+  .callout .t{font-weight:700;font-size:12.5px;margin-bottom:3px;display:flex;gap:6px;align-items:center}
+  .callout.key{background:var(--goodBg);border-color:#cfe6d4}.callout.key .t{color:var(--good)}
+  .callout.warn{background:var(--warnBg);border-color:#f0dcc0}.callout.warn .t{color:var(--warn)}
+  .callout.info{background:var(--info);border-color:#d9ddf6}.callout.info .t{color:var(--accent)}
+  .callout.jewel{background:var(--jewelBg);border-color:#e6d3f6}.callout.jewel .t{color:var(--jewel)}
+  .pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--lineSoft);color:var(--soft);font-weight:600}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)}
+  .btn:hover{border-color:#cfc8b6}
+  .btn.pri{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.pri:hover{background:var(--accentD)}
+  .btn.ghost{background:transparent}
+  .btn.warn{color:var(--warn);border-color:#f0dcc0;background:#fff}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .right{margin-left:auto}
+  .steps{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0 18px;font-size:12.5px}
+  .steps .s{padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+  .steps .s.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .steps .s.done{background:var(--goodBg);color:var(--good);border-color:#cfe6d4}
+  .steps .ar{color:var(--muted)}
+  .ftable{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin-top:8px}
+  .ftable th{font-size:12px;text-align:left;color:var(--muted);background:var(--surface2);padding:9px 12px;font-weight:700}
+  .ftable td{padding:10px 12px;border-top:1px solid var(--lineSoft);vertical-align:middle;font-size:14px}
+  .grphead td{background:var(--surface2);font-weight:700;font-size:12.5px;color:var(--soft);padding:7px 12px}
+  .fval{font-family:var(--mono);font-size:12.5px;color:var(--soft)}
+  .vis{font-size:11px;color:var(--muted)}
+  .summary{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--surface2);border:1px solid var(--line);
+    border-radius:12px;padding:12px 16px;margin:10px 0}
+  .summary .big{font-size:20px;font-weight:800}
+  .bdcol{border-radius:12px;padding:14px 16px;margin:10px 0;border:1px solid var(--line)}
+  .bdcol.pub{background:var(--goodBg);border-color:#cfe6d4}
+  .bdcol.pri{background:var(--jewelBg);border-color:#e6d3f6}
+  .bdcol.att{background:var(--surface2)}
+  .bdcol h4{margin:0 0 8px;font-size:14.5px}
+  .kv{font-family:var(--mono);font-size:12.5px;color:var(--soft);margin:3px 0}
+  .bar{height:9px;background:var(--lineSoft);border-radius:999px;overflow:hidden;margin:8px 0}
+  .bar>i{display:block;height:100%;width:0;background:var(--teal);transition:width .25s}
+  pre.code{background:#1f1d29;color:#e7e3f5;border-radius:10px;padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.5}
+  .timeline{list-style:none;padding:0;margin:8px 0}
+  .timeline li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:14px}
+  .timeline .dot{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;background:var(--lineSoft);color:var(--muted)}
+  .timeline li.done .dot{background:var(--goodBg);color:var(--good)}
+  .timeline li.cur .dot{background:var(--accent);color:#fff}
+  .scbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:13px;margin:8px 0}
+  .scbar .st{padding:4px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+  .scbar .st.done{background:var(--goodBg);color:var(--good);border-color:#cfe6d4}
+  .scbar .st.cur{background:var(--info);color:var(--accent);border-color:#d9ddf6;font-weight:700}
+  .blk{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);box-shadow:var(--shadow);margin:10px 0;position:relative}
+  .blk .ix{display:inline-flex;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-weight:800;font-size:13px;margin-right:8px}
+  .link{text-align:center;color:var(--muted);font-size:18px;margin:-2px 0}
+  /* DPP / QR */
+  .passport{border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);background:var(--surface)}
+  .passport .hd{background:linear-gradient(120deg,#1d4ed8,#0d9488);color:#fff;padding:18px 20px}
+  .passport .hd h3{margin:0;font-size:18px;color:#fff}
+  .passport .bd{padding:16px 20px}
+  .qr{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+  .qr canvas{display:block;image-rendering:pixelated}
+  .attr{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed var(--lineSoft);font-size:13.5px}
+  .attr:first-child{border-top:0}
+  .attr .a-l{color:var(--soft)} .attr .a-v{font-family:var(--mono);color:var(--ink);text-align:right}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+  .seg button{border:0;background:transparent;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:var(--font)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .mask{position:fixed;inset:0;background:rgba(30,28,22,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .modal{background:var(--surface);border-radius:16px;max-width:460px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal h3{margin:0 0 8px}
+  .hidden{display:none}
+  select{font-family:var(--font);font-size:13.5px;padding:6px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface)}
+  @media(max-width:720px){
+    .layout{flex-direction:column}
+    .side{width:100%;min-height:0;position:static;border-right:0;border-bottom:1px solid var(--line);display:flex;overflow:auto}
+    .nav{display:flex;gap:4px}.nav .grp{display:none}.nav a{white-space:nowrap;margin:0}
+    main{padding:18px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand" style="display:inline-flex;align-items:center;gap:9px">
+    <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kanesh">
+      <rect width="32" height="32" rx="8" fill="url(#kaneshG)"/>
+      <path d="M11 7v18M11 16l8.5-9M11 16l8.5 9" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <defs><linearGradient id="kaneshG" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#1d4ed8"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+    </svg>
+    <span>KANESH <span style="font-weight:600;color:var(--muted)">· 雲端平台</span></span>
+  </span>
+  <span class="role">· DPP 發行方 · 訂單 <code>#A2207</code></span>
+  <span class="spacer"></span>
+  <span class="chip" id="connChip">🛰 收集中</span>
+  <span class="chip">🔏 簽章金鑰就緒</span>
+  <span class="chip demo">原型 Demo</span>
+</div>
+
+<div class="layout">
+  <aside class="side"><nav class="nav" id="nav"></nav></aside>
+  <main id="main"></main>
+</div>
+
+<div id="modal" class="mask hidden"><div class="modal" id="modalBody"></div></div>
+
+<!-- 內嵌離線 QR 產生器(qrcode-generator, MIT, 無外網相依) -->
+<script>/**
+ * Minified by jsDelivr using Terser v5.37.0.
+ * Original file: /npm/qrcode-generator@1.4.4/qrcode.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,(function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1}))},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}((function(){return qrcode}));
+//# sourceMappingURL=/sm/26b4b0d0b1e283d6b3ec9857ac597d7a60c76ac17be1ef4c965f03086de426bb.map</script>
+
+<!-- ethers v6(真實上鏈用;離線時僅影響「真實 Mint」,模擬上鏈不受影響) -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+
+<script>
+/* ===================== EVM / NFT 設定(沿用 DPP_NFT 的 Sepolia 部署) ===================== */
+const CONTRACT_ADDRESS = '0x24aeeb254a48820b5b0bdcbdce980a725535718f';   // SimpleDPPNFT @ Sepolia
+const CONTRACT_ABI = [
+  'function mintDPP(address to,string tokenURI_,bytes32 metadataHash,bytes32 schemaHash,bytes32 orderHash,bytes32 stage,uint256 previousTokenId) external returns (uint256 tokenId)',
+  'event DPPMinted(uint256 indexed tokenId,address indexed recipient,string tokenURI,bytes32 metadataHash,bytes32 schemaHash,bytes32 orderHash,bytes32 stage,uint256 previousTokenId)'
+];
+const SEPOLIA_CHAIN_ID = 11155111;
+const SEPOLIA_CHAIN_HEX = '0xaa36a7';
+const IPFS_UPLOAD_ENDPOINT = 'http://localhost:3001/upload-metadata';   // DPP_NFT/server.js
+let REAL_MINT = true;   // 真實上鏈;按「🧪 模擬上鏈」可離線改走模擬區塊
+
+/* ---------- 跨檔資料匯流排(與工廠端共用同源 localStorage) ---------- */
+const Bus={
+  ns:'dpp_demo:',
+  get(k){try{const v=localStorage.getItem(this.ns+k);return v?JSON.parse(v):null;}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(this.ns+k,JSON.stringify(v));}catch(e){}},
+  del(k){try{localStorage.removeItem(this.ns+k);}catch(e){}},
+  onChange(cb){window.addEventListener('storage',e=>{if(e.key&&e.key.indexOf(this.ns)===0){let v=null;try{v=e.newValue?JSON.parse(e.newValue):null;}catch(_){}cb(e.key.slice(this.ns.length),v);}});}
+};
+function simpleHash(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*0x01000193)>>>0;}return ('00000000'+h.toString(16)).slice(-8);}
+function nowUTC(){return new Date().toISOString().slice(0,16).replace('T',' ')+' UTC';}
+
+/* ---------- QR 包裝(已用 cv2 驗證可掃描) ---------- */
+const QR={ render(canvas,text,opts){ opts=opts||{}; try{
+    const qr=qrcode(0,opts.ec||'M'); qr.addData(text); qr.make();
+    const n=qr.getModuleCount(), scale=opts.scale||6, m=opts.margin==null?4:opts.margin, size=(n+m*2)*scale;
+    canvas.width=size; canvas.height=size; const x=canvas.getContext('2d');
+    x.fillStyle='#ffffff'; x.fillRect(0,0,size,size); x.fillStyle='#111111';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(qr.isDark(r,c)) x.fillRect((c+m)*scale,(r+m)*scale,scale,scale);
+    return true;
+  }catch(e){ return false; } } };
+
+/* ---------- 訂單 / 階段目錄(平台對各階段「可收集特徵」的認知;含值供模擬與 DPP) ---------- */
+const ORDER={ no:'#A2207', buyer:'買家 B', issuer:'LongAdvance 平台', product:'有機棉針織 POLO 衫', deadline:'2026-06-25' };
+const SPIN_FIELDS=[
+  {key:'spindleId',grp:'機台 / 製程',label:'紡紗機 ID',val:'RING-12',sensitive:false,rec:'private'},
+  {key:'spinParam',grp:'機台 / 製程',label:'捻度 / 錠速',val:'720 T/m · 16,000 rpm',sensitive:true,rec:'private'},
+  {key:'yarnCount',grp:'批次 / 料號',label:'紗支號數 yarn count',val:'Ne 40/1',sensitive:false,rec:'public'},
+  {key:'blend',grp:'批次 / 料號',label:'混紡比 blend',val:'精梳棉 100%',sensitive:false,rec:'public'},
+  {key:'evenness',grp:'測試 / 品質',label:'條乾 CV%',val:'12.4 %',sensitive:false,rec:'public'},
+  {key:'tenacity',grp:'測試 / 品質',label:'強力 tenacity',val:'18.6 cN/tex',sensitive:false,rec:'public'},
+  {key:'hairiness',grp:'測試 / 品質',label:'毛羽 hairiness (H)',val:'4.2',sensitive:false,rec:'public'},
+  {key:'yarnReport',grp:'文件',label:'紗線測試報告.pdf',val:'hash 71a0…',sensitive:false,rec:'public'},
+  {key:'ocsCert',grp:'文件',label:'OCS 有機棉證明.pdf',val:'hash c4e2…',sensitive:true,rec:'private'},
+];
+const WEAVE_FIELDS=[
+  {key:'loomId',grp:'機台 / 製程',label:'織機 ID',val:'AJL-23',sensitive:false,rec:'private'},
+  {key:'weaveParam',grp:'機台 / 製程',label:'上機參數 經/緯密 · 車速',val:'128×72 根/吋 · 650 rpm',sensitive:true,rec:'private'},
+  {key:'greigeBatch',grp:'批次 / 料號',label:'胚布批號 greige',val:'G-2207-08',sensitive:false,rec:'public'},
+  {key:'structure',grp:'批次 / 料號',label:'組織 structure',val:'平紋 plain',sensitive:false,rec:'public'},
+  {key:'width',grp:'規格',label:'幅寬 width',val:'58 inch',sensitive:false,rec:'public'},
+  {key:'gsm',grp:'規格',label:'克重 GSM',val:'145 g/m²',sensitive:false,rec:'public'},
+  {key:'density',grp:'測試 / 品質',label:'經緯密度 density',val:'128 × 72',sensitive:false,rec:'public'},
+  {key:'strength',grp:'測試 / 品質',label:'撕裂強度 tear',val:'1,820 g',sensitive:false,rec:'public'},
+  {key:'defectRate',grp:'測試 / 品質',label:'疵點率 defect',val:'2.1 %',sensitive:false,rec:'public'},
+  {key:'greigeReport',grp:'文件',label:'胚布檢驗報告.pdf',val:'hash 5b9d…',sensitive:false,rec:'public'},
+];
+const DYE_FIELDS=[
+  {key:'machineId',grp:'機台 / 製程',label:'染色機 ID',val:'DYE-07',sensitive:false,rec:'private'},
+  {key:'stenterParam',grp:'機台 / 製程',label:'定型溫度 / 車速',val:'195°C / 22 m·min',sensitive:true,rec:'private'},
+  {key:'batch',grp:'批次 / 料號',label:'染色批號 batch',val:'B-2207-13',sensitive:false,rec:'public'},
+  {key:'recipe',grp:'批次 / 料號',label:'染料配方 recipe',val:'CI Acid Blue 25 · 2.1%owf …',sensitive:true,rec:'private'},
+  {key:'deltaE',grp:'測試 / 品質',label:'色差 ΔE',val:'0.82',sensitive:false,rec:'public'},
+  {key:'fastness',grp:'測試 / 品質',label:'堅牢度 fastness (ISO 105)',val:'摩擦 4-5 級',sensitive:false,rec:'public'},
+  {key:'cod',grp:'測試 / 品質',label:'廢水 COD',val:'180 mg/L',sensitive:false,rec:'public'},
+  {key:'testReport',grp:'文件',label:'測試報告.pdf',val:'hash 3af9…',sensitive:false,rec:'public'},
+  {key:'grsCert',grp:'文件',label:'GRS 交易證明.pdf',val:'hash b1c7…',sensitive:true,rec:'private'},
+];
+const STAGES=[
+  {id:'spin', label:'紡紗', brand:'🧵 Prosperity 紡紗廠', factoryId:'F-SPIN', order:0, prev:null,   fields:SPIN_FIELDS, schema:'dpp-spin-v1',  factoryDid:'did:web:spin-factory.example'},
+  {id:'weave',label:'織布', brand:'🧶 Harmony 織布廠',    factoryId:'F-WEAVE',order:1, prev:'spin', fields:WEAVE_FIELDS,schema:'dpp-weave-v1', factoryDid:'did:web:weave-factory.example'},
+  {id:'dye',  label:'染整', brand:'🏭 Evergreen 染整廠',  factoryId:'F-DYE',  order:2, prev:'weave',fields:DYE_FIELDS,  schema:'dpp-dye-v1',   factoryDid:'did:web:dye-factory.example'},
+];
+const stageById=id=>STAGES.find(s=>s.id===id);
+
+/* ---------- 狀態 ---------- */
+const state={
+  view:'home', retention:10, audience:'consumer', unseen:0,
+  sel:{ spin:SPIN_FIELDS.map(f=>f.key), weave:WEAVE_FIELDS.map(f=>f.key), dye:DYE_FIELDS.map(f=>f.key) },
+  policy: Bus.get('policy'),
+  verifyResult:null,
+  events: Bus.get('events')||[],
+};
+function getSub(id){return Bus.get('submission:'+id);}
+function subs(){return STAGES.map(s=>getSub(s.id)).filter(Boolean).sort((a,b)=>a.order-b.order);}
+/* 已鑄造(含 block)的提交,與「已上傳但待鑄造」的階段 */
+function minted(){return subs().filter(s=>s.block).sort((a,b)=>a.order-b.order);}
+function pendingStages(){return STAGES.filter(s=>{const sub=getSub(s.id);return sub&&!sub.block;});}
+
+/* ===================== DPP metadata / 雜湊 / IPFS(沿用 DPP_NFT 方法) ===================== */
+function stableStringify(value){
+  if(Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if(value!==null && typeof value==='object'){
+    return `{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+/* 由「工廠回傳的提交」組出 DPP metadata JSON(公開欄位明文,加密欄位放 demo 佔位) */
+function buildStageMetadata(stage, sub, previousTokenId){
+  const publicData={}, encryptedData={};
+  const attributes=(sub.fields||[]).map(f=>{
+    if(f.disclosure==='public'){ publicData[f.key]=f.val; return {trait_type:f.label,value:f.val,visibility:'public'}; }
+    encryptedData[f.key]=`ENC(DEMO_ONLY:${f.key})`;
+    return {trait_type:f.label,value:'Encrypted (demo placeholder)',visibility:'private'};
+  });
+  return {
+    name:`Kanesh DPP ${ORDER.no} · ${stage.label}`,
+    description:`Platform-issued Digital Product Passport for the ${stage.label} stage of order ${ORDER.no}.`,
+    attributes,
+    dpp:{
+      schema:stage.schema, order:ORDER.no, stage:stage.id,
+      previousTokenId:previousTokenId||0, factoryDid:stage.factoryDid,
+      publicData, encryptedData, encryptionNotice:'DEMO_ONLY_NOT_REAL_ENCRYPTION'
+    }
+  };
+}
+function computeDPPHashes(metadata, stage){
+  const canonicalJson=stableStringify(metadata);
+  return {
+    canonicalJson,
+    metadataHash:ethers.keccak256(ethers.toUtf8Bytes(canonicalJson)),
+    schemaHash:ethers.keccak256(ethers.toUtf8Bytes(stage.schema)),
+    orderHash:ethers.keccak256(ethers.toUtf8Bytes(ORDER.no)),
+    stage:ethers.keccak256(ethers.toUtf8Bytes(stage.id))
+  };
+}
+async function uploadMetadataToIPFS(metadata){
+  let response;
+  try{
+    response=await fetch(IPFS_UPLOAD_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(metadata)});
+  }catch(e){
+    throw new Error(`無法連接本機 IPFS 上傳服務 (${IPFS_UPLOAD_ENDPOINT})。請先在 DPP_NFT 執行 npm start。`);
+  }
+  let result=null; try{result=await response.json();}catch(_){}
+  if(!response.ok) throw new Error(result?.error||`IPFS 上傳失敗 (HTTP ${response.status})。`);
+  if(!result?.cid || !result?.tokenURI) throw new Error('IPFS 上傳服務未回傳有效的 CID / tokenURI。');
+  return {cid:result.cid, tokenURI:result.tokenURI, gatewayURL:result.gatewayURL||null};
+}
+
+/* ===================== EVM 錢包 ===================== */
+const walletState={account:null, chainId:null};
+function isSepolia(){return walletState.chainId===SEPOLIA_CHAIN_ID;}
+function walletErrorMessage(error, fallback){
+  const m=error&&(error.info?.error?.message||error.shortMessage||error.message);
+  return m?`${fallback}(${m})`:fallback;
+}
+async function connectWallet(){
+  if(!window.ethereum){ const m='找不到 EVM 瀏覽器錢包。請安裝或啟用 MetaMask / OKX Wallet 後重試。'; alert(m); toast(m); return null; }
+  try{
+    const accounts=await window.ethereum.request({method:'eth_requestAccounts'});
+    walletState.account=accounts?.[0]||null;
+    const cid=await window.ethereum.request({method:'eth_chainId'});
+    walletState.chainId=parseInt(cid,16);
+    return walletState.account;
+  }catch(error){ toast(walletErrorMessage(error,'錢包連線失敗。')); return null; }
+}
+async function switchToSepolia(){
+  if(!window.ethereum) return false;
+  try{
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:SEPOLIA_CHAIN_HEX}]});
+    const cid=await window.ethereum.request({method:'eth_chainId'});
+    walletState.chainId=parseInt(cid,16);
+    return isSepolia();
+  }catch(error){ toast(walletErrorMessage(error,'無法切換到 Sepolia,請在錢包中手動切換後重試。')); return false; }
+}
+function logEvent(msg){state.events.unshift({msg, ts:nowUTC()}); state.events=state.events.slice(0,12); Bus.set('events',state.events);}
+
+/* ---------- 導覽 ---------- */
+const NAV=[
+  ['_c1','發行流程'],
+  ['home','▣ 總覽 Dashboard'],
+  ['policy','📋 政策建構器'],
+  ['collect','🛰 收集進度','collect'],
+  ['chain','⛓ 區塊鏈瀏覽器'],
+  ['dpp','🎫 DPP 與 QR'],
+  ['_c2','管理'],
+  ['keys','🔑 金鑰 / 驗證請求'],
+  ['events','🔔 事件通知'],
+  ['settings','⚙ 設定'],
+];
+function renderNav(){
+  let h='';
+  for(const it of NAV){
+    if(it[0].startsWith('_c')){h+=`<div class="grp">${it[1]}</div>`;continue;}
+    const [v,label,badgeKind]=it;
+    let badge='';
+    if(badgeKind==='collect' && state.unseen>0) badge=`<span class="b">${state.unseen}</span>`;
+    h+=`<a class="${state.view===v?'on':''}" onclick="go('${v}')">${label}${badge}</a>`;
+  }
+  document.getElementById('nav').innerHTML=h;
+}
+function renderConn(){
+  const n=minted().length;
+  const chip=document.getElementById('connChip');
+  if(n>=3) chip.outerHTML='<span class="chip" id="connChip">✅ 三廠已鑄造</span>';
+  else chip.outerHTML=`<span class="chip warn" id="connChip">🛰 已鑄造 ${n}/3</span>`;
+}
+function go(v){ if(v==='collect') state.unseen=0; state.view=v; render(); window.scrollTo(0,0); }
+
+/* ---------- 供應鏈狀態列 ---------- */
+const SC=[['poly','聚酯',null],['spin','紡紗','spin'],['weave','織布','weave'],['dye','染整','dye'],['cmt','成衣',null],['DPP','護照','DPP']];
+function scHTML(){
+  const have=minted().length;
+  return `<div class="scbar">`+SC.map((s,i)=>{
+    const [k,lbl,sk]=s; let cls='';
+    if(sk==='DPP'){ cls=have>=3?'cur':''; }
+    else if(sk){ const su=getSub(sk); if(su&&su.block)cls='done'; }
+    else if(k==='poly'){cls='done';}
+    return `<span class="st ${cls}">${lbl}${cls==='done'?' ✓':''}</span>`+(i<SC.length-1?'<span>→</span>':'');
+  }).join('')+`</div>`;
+}
+
+/* ---------- Views ---------- */
+function vHome(){
+  const n=minted().length, pend=pendingStages().length, dispatched=!!state.policy;
+  const stMark=s=>{const su=getSub(s.id); return (su?(su.block?'🟢':'🟡'):'⚪')+s.label;};
+  return `<div class="eyebrow">雲端平台 · DPP 發行方</div><h1>總覽 Dashboard</h1>
+  <p>挑選要收集的特徵 → 派發給工廠 → 工廠回傳 → 平台<b>鑄造 NFT</b> → 用明文彙整成 DPP 與 QR。</p>
+  <div class="grid3">
+    <div class="card"><b>① 收集政策</b><p>${dispatched?`🟢 已派發 <code>${state.policy.id}</code><br>保存 ${state.policy.retentionYears} 年`:'⚪ 尚未派發'}</p>
+      <button class="btn ${dispatched?'':'pri'}" onclick="go('policy')">${dispatched?'調整 / 重派 →':'前往派發 →'}</button></div>
+    <div class="card"><b>② 鑄造進度</b><p>已鑄造 <b style="font-size:18px">${n}/3</b> 廠${pend?` · <span style="color:var(--warn)">${pend} 筆待鑄造</span>`:''}<br><span class="vis">${STAGES.map(stMark).join(' · ')}</span></p>
+      <button class="btn ${pend?'pri':''}" onclick="go('collect')">查看進度 / 鑄造 →</button></div>
+    <div class="card"><b>③ DPP 護照</b><p>${n>=3?'🟢 三廠已鑄造,可發行':(n>0?'🟡 鑄造中('+n+'/3)':'⚪ 等待提交')}</p>
+      <button class="btn ${n>=3?'pri':''}" onclick="go('dpp')">查看 DPP / QR →</button></div>
+  </div>
+
+  <h2>訂單 ${ORDER.no} · 供應鏈位置</h2>
+  ${scHTML()}
+  <div class="row" style="margin-top:6px">
+    <button class="btn" onclick="refreshAll()">↻ 重新整理收集狀態</button>
+    <span class="right"></span>
+    <button class="btn warn" onclick="resetAll()">重置整批 Demo</button>
+  </div>`;
+}
+
+function vPolicy(){
+  const rows=stage=>{
+    const sel=state.sel[stage.id];
+    let h='',lg='';
+    for(const f of stage.fields){
+      if(f.grp!==lg){h+=`<tr class="grphead"><td colspan="3">▸ ${f.grp}</td></tr>`;lg=f.grp;}
+      const on=sel.indexOf(f.key)>=0;
+      h+=`<tr><td><label style="cursor:pointer"><input type="checkbox" ${on?'checked':''} onchange="toggleSel('${stage.id}','${f.key}')"> ${f.label}</label> ${f.sensitive?'<span class="vis" style="color:var(--jewel)">⚠機密</span>':''}</td>
+        <td class="vis">${f.rec==='public'?'建議公開':'建議加密'}</td><td class="fval">${f.key}</td></tr>`;
+    }
+    return `<h3>${stage.brand} · ${stage.label}(${sel.length}/${stage.fields.length})</h3>
+      <table class="ftable"><tr><th>特徵</th><th>建議</th><th>key</th></tr>${h}</table>`;
+  };
+  const received=minted().length;   // 「鑄造完成」才算完成一站
+  const allDone=received>=STAGES.length;
+  const activeStage=allDone?null:STAGES[received];
+  const activeSub=activeStage?getSub(activeStage.id):null;
+  const activePending=activeSub && !activeSub.block;            // 已上傳、待鑄造
+  const dispatchedForActive=activeStage && state.policy && state.policy.perStage && state.policy.perStage[activeStage.id];
+  // 序列進度列
+  const seqBar=`<div class="scbar">`+STAGES.map((s,i)=>{
+    const su=getSub(s.id); let cls='', tag='';
+    if(su&&su.block){cls='done';tag=' ✓';}
+    else if(activeStage&&s.id===activeStage.id){cls='cur';tag=activePending?' ◷ 待鑄造':(dispatchedForActive?' ◷ 等待回傳':' ◀ 設定中');}
+    return `<span class="st ${cls}">${s.label}${tag}</span>`+(i<STAGES.length-1?'<span>→</span>':'');
+  }).join('')+`</div>`;
+
+  let body;
+  if(allDone){
+    body=`<div class="callout key"><div class="t">🟢 序列完成</div>三廠政策已依序派發、全部回傳並鑄造上鏈。可前往 <b>DPP 與 QR</b> 發行護照。
+      <div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('dpp')">前往 DPP / QR →</button></div></div>`;
+  } else if(activePending){
+    body=`<div class="callout warn"><div class="t">🪙 ${activeStage.brand} 已回傳 · 待鑄造 NFT</div>
+      該廠已完成揭露決策並送回資料。請<b>鑄造其 DPP NFT</b>,鑄造完成後才會解鎖下一站(${STAGES[received+1]?STAGES[received+1].label:'—'})。
+      <div class="row" style="margin-top:8px">
+        <button class="btn pri" onclick="mintStageToken('${activeStage.id}')">🪙 Mint NFT(真實上鏈)</button>
+        <button class="btn ghost" onclick="simulateMintStage('${activeStage.id}')">🧪 模擬上鏈(離線)</button>
+        <button class="btn" onclick="go('collect')">查看收集進度 →</button></div></div>`;
+  } else if(dispatchedForActive){
+    body=`<div class="callout info"><div class="t">🛰 已派發給 ${activeStage.brand} · 等待回傳</div>
+      該廠收件匣通知已亮起。等其完成「揭露決策 → 送出」並回傳後,即可在此<b>鑄造 NFT</b>,再設定下一站(${STAGES[received+1]?STAGES[received+1].label:'—'})。
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">查看收集進度 →</button>
+        <button class="btn ghost" onclick="dispatchPolicy('${activeStage.id}')">重新派發本站</button></div></div>`;
+  } else {
+    body=`<div class="callout info"><div class="t">▶ 第 ${received+1} 站:設定「${activeStage.label}」要收集的特徵</div>
+      勾選本站要收集的欄位,按下方按鈕<b>只派發給 ${activeStage.brand}</b>。回傳並鑄造上鏈後才會解鎖下一站。</div>
+      ${rows(activeStage)}
+      <div class="row" style="margin-top:14px"><span class="right"></span>
+        <button class="btn pri" onclick="dispatchPolicy('${activeStage.id}')">🛰 派發政策給 ${activeStage.label}廠</button></div>`;
+  }
+
+  return `<h1>政策建構器 · 序列派發</h1>
+  <p>依序對<b>每一站</b>挑選要收集的特徵:紡紗 → 織布 → 染整。每站回傳並<b>鑄造 NFT</b> 後,才設定並派發下一站(非同時派發)。</p>
+  <div class="summary">
+    <div>保存年限</div>
+    <select onchange="state.retention=+this.value">
+      ${[3,5,7,10,15].map(y=>`<option value="${y}" ${state.retention===y?'selected':''}>${y} 年</option>`).join('')}
+    </select>
+    <div>派發次序</div><span class="pill">紡紗 → 織布 → 染整(逐站)</span>
+  </div>
+  ${seqBar}
+  ${body}`;
+}
+
+function vCollect(){
+  const mn=minted().length;
+  return `<h1>收集進度 · 鑄造 NFT</h1>
+  <p>工廠回傳資料後,平台逐站<b>鑄造 DPP NFT</b>(IPFS 上傳 + Sepolia mintDPP);每塊以 previousTokenId 接續前一站。</p>
+  <ul class="timeline">
+    ${STAGES.map(s=>{const sub=getSub(s.id); const done=sub&&sub.block; const pending=sub&&!sub.block;
+      let detail;
+      if(done){
+        const b=sub.block;
+        const tx=b.real&&b.txHash?` · <a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:(b.real?'':' · 🧪 模擬');
+        detail=`<span class="pill">Token #${b.tokenId}</span> <span class="vis">🌐 ${sub.publicCount} 明文 · 🔒 ${sub.privateCount} 加密${tx}</span>`;
+      } else if(pending){
+        detail=`<span class="pill" style="background:var(--warnBg);color:var(--warn)">待鑄造</span> <span class="vis">🌐 ${sub.publicCount} 明文 · 🔒 ${sub.privateCount} 加密 · ${sub.ts}</span>
+          <div class="row" style="margin-top:8px">
+            <button class="btn pri" onclick="mintStageToken('${s.id}')">🪙 Mint NFT</button>
+            <button class="btn ghost" onclick="simulateMintStage('${s.id}')">🧪 模擬上鏈</button></div>`;
+      } else {
+        detail=state.policy&&state.policy.perStage&&state.policy.perStage[s.id]?'<span class="vis">已派發,等待工廠上傳…</span>':'<span class="vis">等待政策派發</span>';
+      }
+      return `<li class="${done?'done':(pending?'cur':(state.policy?'cur':''))}"><span class="dot">${done?'✓':s.order+1}</span>
+        <div><b>${s.brand}</b> · ${s.label} ${detail}</div></li>`;
+    }).join('')}
+    <li class="${mn>=3?'cur':''}"><span class="dot">▣</span><div><b>平台彙整 DPP</b> · ${mn>=3?'三廠已鑄造,可發行':'待三廠鑄造完成'}</div></li>
+  </ul>
+  <div class="row">
+    <button class="btn" onclick="refreshAll()">↻ 重新整理</button>
+    ${mn>=3?`<button class="btn pri" onclick="go('dpp')">前往 DPP / QR →</button>`:''}
+  </div>
+  <div class="callout jewel"><div class="t">🪙 鑄造規則</div>「🪙 Mint NFT」走真實流程:把該站 metadata 上傳 IPFS、再以平台錢包呼叫 <code>mintDPP</code> 鑄到 Sepolia(需開啟 DPP_NFT backend 與錢包)。離線時用「🧪 模擬上鏈」。</div>`;
+}
+
+function vChainExplorer(){
+  const ch=minted();
+  if(!ch.length) return `<h1>區塊鏈瀏覽器</h1><div class="callout info"><div class="t">🛈 鏈上還沒有區塊</div>等工廠回傳、平台<b>鑄造 NFT</b> 後即會出現區塊。<div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">前往收集 / 鑄造 →</button></div></div>`;
+  const anySim=ch.some(s=>!s.block.real);
+  const vr=state.verifyResult;
+  let html=`<h1>區塊鏈瀏覽器 · 訂單 ${ORDER.no}</h1>
+  <div class="row">${anySim?`<button class="btn pri" onclick="verifyChain()">🔍 驗證鏈接完整性(模擬塊)</button>`:''}
+    ${vr?`<span class="chip ${vr.ok?'':'warn'}">${vr.ok?'🟢 鏈接完整 · 未被竄改':'🔴 鏈接異常'}</span>`:''}
+    <span class="right"></span><span class="vis">${ch.length} 個區塊</span></div>`;
+  ch.forEach((sub,i)=>{
+    const b=sub.block; const chk=vr&&vr.blocks?vr.blocks[i]:null;
+    const real=b.real;
+    const tokenCell=real&&b.txHash?`<a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">Token #${b.tokenId} ↗</a>`:`Token #${b.tokenId}`;
+    html+=`${i>0?'<div class="link">⛓</div>':''}
+    <div class="blk">
+      <div class="row"><span class="ix">${b.index}</span><b>${stageById(b.stage)?stageById(b.stage).brand:b.stage} · ${b.label}</b>
+        <span class="right"></span><span class="pill">${tokenCell}</span>
+        <span class="chip ${real?'':'demo'}">${real?'⛓ Sepolia':'🧪 模擬'}</span>
+        ${chk?`<span class="chip ${chk.ok?'':'warn'}">${chk.ok?'✓ 驗證通過':'✗ 異常'}</span>`:''}</div>
+      <div class="kv">tx:${real&&b.txHash?`<a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">${b.txHash}</a>`:(b.txHash||'(模擬)')} · 時間 ${b.timestamp}</div>
+      <div class="kv">metadataHash:${b.metadataHash} · 🌐 ${sub.publicCount} 明文 / 🔒 ${sub.privateCount} 加密</div>
+      ${real?`<div class="kv">tokenURI:${b.gatewayURL?`<a href="${b.gatewayURL}" target="_blank" rel="noopener">${b.tokenURI}</a>`:(b.tokenURI||'')}</div>
+      <div class="kv">previousTokenId:${b.prevTokenId||'(無 · 創世段)'} · 合約 <code>${CONTRACT_ADDRESS}</code></div>`
+      :`<div class="kv">prevHash:${b.prevHash||'(無 · 創世段)'}</div>
+      <div class="kv" style="color:var(--accent)">hash:${b.hash}</div>`}
+    </div>`;
+  });
+  html+=`<div class="callout key"><div class="t">🛈 鏈接與查驗</div>真實塊(⛓ Sepolia)以 <code>previousTokenId</code> 串接前一站,並可由 Etherscan / IPFS 連結獨立查驗;模擬塊以 <code>hash = H(index|stage|metadataHash|prevHash)</code> 串接,可按「驗證鏈接」檢查。</div>`;
+  return html;
+}
+
+function vDPP(){
+  const ch=minted();
+  if(ch.length<3) return `<h1>DPP 與 QR</h1><div class="callout warn"><div class="t">⏳ 尚未齊備(${ch.length}/3)</div>需三廠都依序送回並<b>鑄造 NFT</b> 才能發行完整護照。<div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('collect')">前往收集 / 鑄造 →</button></div></div>${ch.length?dppPreview(ch):''}`;
+  return dppPreview(ch);
+}
+function dppHashOf(ch){ return simpleHash(ch.map(s=>s.block.hash||s.block.metadataHash).join('|')+ch.map(s=>s.fields.filter(f=>f.disclosure==='public').map(f=>f.val).join(',')).join('|')); }
+function dppPreview(ch){
+  let pubTotal=0, priTotal=0;
+  ch.forEach(s=>{pubTotal+=s.publicCount; priTotal+=s.privateCount;});
+  const dh=dppHashOf(ch);
+  const aud=state.audience;
+  const isReg=aud==='regulator';
+  const audLabel=isReg?'法規機關':'消費者';
+  // QR 內含 view=對象,使不同對象產生「不同的 QR」
+  const url=`https://dpp.example/p/A2207?view=${aud}#${dh}`;
+  /* 揭露規則(兩種對象):
+     - 消費者:只看工廠選擇「公開」的欄位(明文)
+     - 法規機關:可額外審閱工廠「加密上傳」的欄位(具解密權,看得到原始值) */
+  let body='', visTotal=0;
+  ch.forEach(s=>{
+    const cat=stageById(s.stage);
+    const catVal=k=>{const c=cat&&cat.fields.find(x=>x.key===k);return c?c.val:'(原始值)';};
+    const pubs=s.fields.filter(f=>f.disclosure==='public');
+    const pris=s.fields.filter(f=>f.disclosure==='private');
+    visTotal += pubs.length + (isReg?pris.length:0);
+    const pubRows=pubs.map(f=>`<div class="attr"><span class="a-l">🌐 ${f.label}</span><span class="a-v">${f.val}</span></div>`).join('');
+    const regRows=isReg?pris.map(f=>`<div class="attr"><span class="a-l" style="color:var(--jewel)">🔓 ${f.label} <span class="vis">(加密欄位 · 法規解密)</span></span><span class="a-v" style="color:var(--jewel)">${catVal(f.key)}</span></div>`).join(''):'';
+    body+=`<div class="bdcol pub"><h4>${cat?cat.brand:s.stage} · ${s.stageLabel} <span class="pill">Token #${s.block.tokenId}</span></h4>
+      ${pubs.length?pubRows:'<div class="vis">(本廠無公開欄位)</div>'}
+      ${regRows}
+      ${!isReg&&pris.length?`<div class="kv" style="margin-top:8px;color:var(--jewel)">🔒 ${pris.length} 項加密欄位未揭露(消費者不可見;僅法規機關可審閱)</div>`:''}
+    </div>`;
+  });
+  return `<h1>DPP 與 QR · 數位產品護照</h1>
+  <p>消費者只看工廠選擇<b>公開</b>的欄位;<b>法規機關</b>另具解密權,可額外審閱工廠<b>加密上傳</b>的欄位。</p>
+  <div class="row"><span>揭露對象:</span><span class="seg">
+    <button class="${aud==='consumer'?'on':''}" onclick="setAud('consumer')">消費者</button>
+    <button class="${aud==='regulator'?'on':''}" onclick="setAud('regulator')">法規機關</button>
+  </span><span class="right"></span><span class="vis">本對象可見 ${visTotal} 欄(🌐 公開 ${pubTotal}${isReg?` + 🔓 解密 ${priTotal}`:` · 🔒 加密隱藏 ${priTotal}`})</span></div>
+
+  <div class="grid2" style="margin-top:8px;align-items:start">
+    <div class="passport">
+      <div class="hd"><div class="eyebrow" style="color:#cfe1ff">DIGITAL PRODUCT PASSPORT</div>
+        <h3>${ORDER.product}</h3>
+        <div style="opacity:.92;font-size:13px">訂單 ${ORDER.no} · 發行方 ${ORDER.issuer} · 🔗 已上鏈三段</div></div>
+      <div class="bd">
+        ${body}
+      </div>
+    </div>
+    <div>
+      <div class="card" style="text-align:center">
+        <h3 style="margin-top:0">📱 護照 QR(${audLabel})</h3>
+        <div class="qr"><canvas id="dppQR"></canvas></div>
+        <div class="kv" id="qrUrl" style="margin-top:10px;word-break:break-all">${url}</div>
+        <div class="vis">掃描可開啟對應對象的護照檢視</div>
+      </div>
+      <div class="card">
+        <div class="kv">DPP 雜湊:${dh}</div>
+        <div class="kv">溯源鏈:${ch.map(s=>s.stageLabel).join(' → ')} → DPP</div>
+        <div class="kv" style="color:var(--good)">🟢 三段皆已上鏈 · 可密碼學查驗</div>
+        <div class="row" style="margin-top:8px"><button class="btn" onclick="go('chain')">看區塊鏈 →</button><button class="btn ghost" onclick="showDppJson()">DPP JSON ▾</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout jewel"><div class="t">🔒 選擇性揭露</div>消費者只見工廠公開的明文欄位;加密欄位對其不揭露。<b>法規機關</b>具解密權,可額外審閱工廠加密上傳的欄位(🔓)。</div>`;
+}
+
+function vKeys(){
+  const ch=subs();
+  const enc=[];
+  ch.forEach(s=>s.fields.filter(f=>f.disclosure==='private').forEach(f=>enc.push({stage:s.stage,stageLabel:s.stageLabel,label:f.label,key:f.key,cipher:f.cipher})));
+  const reqs=Bus.get('keyRequests')||[];
+  return `<h1>金鑰 / 驗證請求</h1>
+  <p>平台手上每個工廠的密文都「打不開」。要查驗加密欄位,必須<b>向該工廠申請鑰匙</b>,由工廠在其端點放行。</p>
+  ${enc.length?`<h2>鏈上的加密欄位(${enc.length})</h2>
+  <table class="ftable"><tr><th>階段</th><th>欄位</th><th>密文(平台所見)</th><th></th></tr>
+    ${enc.map(e=>{const pending=reqs.find(r=>r.stage===e.stage&&r.key===e.key);
+      return `<tr><td>${e.stageLabel}</td><td>🔒 ${e.label}</td><td class="fval">${e.cipher||'ENC(••••)'}</td>
+      <td>${pending?`<span class="chip demo">已申請 · 待工廠放行</span>`:`<button class="btn" onclick="requestKey('${e.stage}','${e.key}')">向工廠申請鑰匙</button>`}</td></tr>`;}).join('')}
+  </table>`:'<div class="callout info">目前鏈上沒有加密欄位,或尚無提交。</div>'}
+  <div class="callout key"><div class="t">🛈 對應工作流②</div>「ALL 資料都會送回平台,但只有公開欄位是明文;其餘是密文,需經工廠同意取得鑰匙才能驗證。」工廠在其「驗證請求」頁放行後,智能合約 / TEE 才會釋放該欄位的解密能力。</div>`;
+}
+
+function vSimple(t,b){return `<h1>${t}</h1>${b}`;}
+
+function render(){
+  renderNav(); renderConn();
+  const v=state.view;
+  const map={home:vHome,policy:vPolicy,collect:vCollect,chain:vChainExplorer,dpp:vDPP,keys:vKeys};
+  let html;
+  if(map[v]) html=map[v]();
+  else if(v==='events') html=vSimple('事件通知',`<div class="card"><ul class="timeline">
+    ${(state.events.length?state.events:[{msg:'(尚無事件)',ts:''}]).map(e=>`<li class="done"><span class="dot">✓</span>${e.msg} <span class="vis">${e.ts}</span></li>`).join('')}
+  </ul></div><div class="callout info"><div class="t">🛈 Email 觸發</div>派發政策 / 收到提交都會在這裡留下事件;點進收集進度即可處理。</div>`);
+  else if(v==='settings') html=vSimple('設定',`<div class="card">
+    <div class="kv">平台身分(DID):did:web:longadvance-platform.example</div>
+    <div class="kv">簽章金鑰:🟢 就緒(政策以平台私鑰簽章)</div>
+    <div class="kv">區塊鏈:模擬 ERC-721(本原型)</div>
+    <div class="kv">資料匯流排:同源 localStorage(<code>dpp_demo:*</code>)</div>
+    <div class="kv">QR:內嵌離線產生器(無外網相依)</div>
+    <div class="kv">語言:繁體中文</div>
+    <div class="row" style="margin-top:10px"><button class="btn warn" onclick="resetAll()">重置整批 Demo(清空政策 / 提交)</button></div>
+  </div>`);
+  else html=vSimple('—','');
+  document.getElementById('main').innerHTML=html;
+  // DPP 視圖:innerHTML 設定後再畫 QR
+  if(v==='dpp'){
+    const cv=document.getElementById('dppQR');
+    if(cv){ const ch=minted(); if(ch.length){ const url=document.getElementById('qrUrl').textContent;
+      const ok=QR.render(cv,url,{scale:6,ec:'Q'});
+      if(!ok){cv.outerHTML='<div class="kv" style="color:var(--warn)">QR 產生器未載入;網址見下方</div>';}
+    }}
+  }
+}
+
+/* ---------- 互動 ---------- */
+function toggleSel(stage,key){
+  const arr=state.sel[stage]; const i=arr.indexOf(key);
+  if(i>=0) arr.splice(i,1); else arr.push(key);
+  render();
+}
+/* 把「某一站」的選定特徵累加進政策並寫出(逐站派發,而非一次三廠) */
+function addStageToPolicy(stageId){
+  const p = state.policy || { id:'POL-A2207', order:ORDER.no, issuer:ORDER.issuer,
+    retentionYears:state.retention, deadline:ORDER.deadline, sig:'verified ✓', perStage:{} };
+  p.retentionYears=state.retention;
+  p.perStage = Object.assign({}, p.perStage, { [stageId]: state.sel[stageId].slice() });
+  Bus.set('policy',p); state.policy=p;
+  return p;
+}
+function dispatchPolicy(stageId){
+  const stage=stageById(stageId);
+  addStageToPolicy(stageId);
+  logEvent('已派發收集政策給 '+stage.label+'廠(序列第 '+(stage.order+1)+' 站)');
+  toast('🛰 已派發政策給 '+stage.label+'廠 · 等其回傳上鏈後再設定下一站');
+  render();
+}
+
+/* ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+   BLOCKCHAIN INTEGRATION POINT
+   工廠端只送回「簽署 + 加密邊界」(submission.block === null)。
+   平台在「收到提交時」執行區塊鏈上鏈(mint / 錨定),產生 block 後回填。
+   正式環境:把下面的模擬雜湊改成實際的智能合約呼叫(如 ERC-721 mint),
+   等交易確認後,用回執(tokenId / txHash / blockNumber)填入 block 再寫回。
+   串接規則:hash = H(index | stage | metadataHash | prevHash),prevHash 指向前一段。
+   ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
+function mintBlock(sub){
+  const stage=stageById(sub.stage);
+  const prevSub=stage&&stage.prev?getSub(stage.prev):null;
+  const prevHash=prevSub&&prevSub.block?prevSub.block.hash:null;
+  const metadataHash=sub.metadataHash||simpleHash(JSON.stringify(sub.fields)+sub.stage);
+  const hash=simpleHash(stage.order+'|'+sub.stage+'|'+metadataHash+'|'+(prevHash||''));
+  return { index:stage.order, stage:sub.stage, label:stage.label, factoryId:stage.factoryId,
+    tokenId:1000+parseInt(hash.slice(0,3),16),
+    txHash:'0x'+simpleHash(hash+'tx')+'…'+hash.slice(0,2),
+    timestamp:nowUTC(), metadataHash, prevHash, hash, real:false };
+}
+
+/* ===================== 真實上鏈:IPFS 上傳 + Sepolia mintDPP(沿用 DPP_NFT 方法) ===================== */
+const MINT_STEPS=['連接錢包 / Sepolia','建立 metadata 並計算 keccak256','上傳 metadata 至 IPFS(Pinata)','送出 mintDPP 交易','等待 Sepolia 確認'];
+function renderMintModal(p){
+  const rows=MINT_STEPS.map((s,i)=>{
+    const done=p.done||i<p.step, cur=i===p.step;
+    const mark=done?'✓':(cur?(p.error?'✗':'◷'):(i+1));
+    return `<li class="${done?'done':(cur?'cur':'')}"><span class="dot">${mark}</span>${s}</li>`;
+  }).join('');
+  let foot;
+  if(p.error){ foot=`<div class="callout warn"><div class="t">⚠ 失敗</div>${p.error}</div><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">關閉</button></div>`; }
+  else if(p.done){ foot=`<div class="callout key"><div class="t">✅ 已上鏈</div>Token #${p.tokenId}${p.txHash?` · <a href="https://sepolia.etherscan.io/tx/${p.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:''}</div><div class="row"><span class="right"></span><button class="btn pri" onclick="closeModal()">完成</button></div>`; }
+  else { foot=`<div class="callout info"><div class="t">⏳ 進行中</div>${p.message||''}</div>`; }
+  openModal(`<h3>🪙 鑄造 ${p.stageLabel} DPP NFT</h3><ul class="timeline">${rows}</ul>${foot}`);
+}
+async function mintStageToken(stageId){
+  const stage=stageById(stageId), sub=getSub(stageId);
+  if(!sub){ toast('找不到該廠提交'); return; }
+  if(sub.block){ toast('該廠已鑄造 Token #'+sub.block.tokenId); return; }
+  const p={stageLabel:stage.label, step:0, message:'正在連接錢包並確認 Sepolia…', error:null, done:false};
+  renderMintModal(p);
+  try{
+    if(typeof ethers==='undefined') throw new Error('ethers.js 載入失敗(離線?)。可改用「🧪 模擬上鏈」。');
+    if(!window.ethereum) throw new Error('找不到 EVM 瀏覽器錢包。請安裝 MetaMask,或改用「🧪 模擬上鏈」。');
+    const account=walletState.account||await connectWallet();
+    if(!account) throw new Error('尚未取得錢包帳號。請允許網站連接錢包後重試。');
+    if(!isSepolia()){ const ok=await switchToSepolia(); if(!ok) throw new Error('目前不是 Sepolia,而且網路切換未完成。'); }
+
+    const prevStage=stage.prev?stageById(stage.prev):null;
+    const prevSub=prevStage?getSub(prevStage.id):null;
+    const previousTokenId=prevSub&&prevSub.block?(Number(prevSub.block.tokenId)||0):0;
+
+    p.step=1; p.message='正在建立 canonical metadata 並計算 keccak256…'; renderMintModal(p);
+    const metadata=buildStageMetadata(stage, sub, previousTokenId);
+    const hashes=computeDPPHashes(metadata, stage);
+
+    p.step=2; p.message='正在透過本機 backend 上傳 metadata 至 Pinata / IPFS…'; renderMintModal(p);
+    const upload=await uploadMetadataToIPFS(metadata);
+
+    if(!ethers.isAddress(CONTRACT_ADDRESS)||CONTRACT_ADDRESS===ethers.ZeroAddress) throw new Error('NFT 合約位址尚未設定。');
+    const provider=new ethers.BrowserProvider(window.ethereum);
+    const network=await provider.getNetwork();
+    if(Number(network.chainId)!==SEPOLIA_CHAIN_ID) throw new Error('錢包目前不是 Sepolia,請切換後重試。');
+    const signer=await provider.getSigner();
+    const recipient=await signer.getAddress();
+    const contract=new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+    p.step=3; p.message='請在錢包中確認 mintDPP 交易…'; renderMintModal(p);
+    const tx=await contract.mintDPP(recipient, upload.tokenURI, hashes.metadataHash, hashes.schemaHash, hashes.orderHash, hashes.stage, BigInt(previousTokenId));
+
+    p.step=4; p.txHash=tx.hash; p.message='交易已送出,等待 Sepolia 確認…'; renderMintModal(p);
+    const receipt=await tx.wait();
+    let tokenId=null;
+    for(const log of receipt.logs){ try{ const parsed=contract.interface.parseLog(log); if(parsed?.name==='DPPMinted'){ tokenId=parsed.args.tokenId.toString(); break; } }catch(_){} }
+
+    const block={ index:stage.order, stage:stage.id, label:stage.label, factoryId:stage.factoryId,
+      tokenId: tokenId||'?', txHash:tx.hash, tokenURI:upload.tokenURI, cid:upload.cid, gatewayURL:upload.gatewayURL,
+      metadataHash:hashes.metadataHash, prevTokenId:previousTokenId, timestamp:nowUTC(), issuer:recipient, real:true };
+    Bus.set('submission:'+stage.id, Object.assign({}, sub, { block, metadata, canonicalJson:hashes.canonicalJson }));
+    logEvent(stage.label+'廠 → 平台已鑄造 DPP NFT · Token #'+block.tokenId);
+    p.done=true; p.tokenId=block.tokenId; renderMintModal(p);
+    toast('⛓ '+stage.label+'廠 已上鏈 · Token #'+block.tokenId);
+    render();
+  }catch(error){
+    console.error('mintStageToken failed:',error);
+    p.error=walletErrorMessage(error,'Mint 失敗,請查看瀏覽器 console。'); renderMintModal(p);
+    toast(p.error);
+  }
+}
+/* 離線備援:用模擬區塊完成同一流程(無需 backend / 錢包) */
+function simulateMintStage(stageId){
+  const stage=stageById(stageId), sub=getSub(stageId);
+  if(!sub||sub.block){ render(); return; }
+  const block=mintBlock(sub);
+  Bus.set('submission:'+stage.id, Object.assign({}, sub, { block }));
+  logEvent(stage.label+'廠 →(模擬)平台上鏈 · Token #'+block.tokenId);
+  toast('🧪(模擬)已為 '+stage.label+'廠 上鏈 · Token #'+block.tokenId);
+  render();
+}
+
+function verifyChain(){
+  const ch=minted(); let ok=true; const blocks=[];
+  for(let i=0;i<ch.length;i++){
+    const b=ch[i].block;
+    if(b.real){ blocks.push({ok:true,real:true}); continue; }   // 真實塊由 Etherscan 驗證
+    const recomputed=simpleHash(b.index+'|'+b.stage+'|'+b.metadataHash+'|'+(b.prevHash||''));
+    const hashOk=recomputed===b.hash;
+    const prev=i>0?ch[i-1].block:null;
+    const linkOk = i===0 ? (b.prevHash===null||b.prevHash===undefined) : (prev&&!prev.real ? b.prevHash===prev.hash : true);
+    const bok=hashOk&&linkOk; if(!bok)ok=false;
+    blocks.push({ok:bok,hashOk,linkOk});
+  }
+  state.verifyResult={ok,blocks};
+  toast(ok?'🟢 驗證通過:模擬塊雜湊與鏈接一致':'🔴 發現異常:有模擬塊雜湊或鏈接對不上');
+  render();
+}
+function setAud(a){state.audience=a;render();}
+function requestKey(stage,key){
+  const reqs=Bus.get('keyRequests')||[];
+  if(!reqs.find(r=>r.stage===stage&&r.key===key)){ reqs.push({stage,key,from:'platform',status:'pending',ts:nowUTC()}); Bus.set('keyRequests',reqs);
+    logEvent('向 '+(stageById(stage)?stageById(stage).label:stage)+'廠 申請「'+key+'」解密鑰匙'); }
+  toast('已送出鑰匙申請 · 需該工廠在其「驗證請求」頁放行');
+  render();
+}
+function refreshAll(){ state.policy=Bus.get('policy'); state.verifyResult=null; toast('已重新讀取收集狀態'); render(); }
+function resetAll(){
+  openModal(`<h3>重置整批 Demo?</h3><p>會清空已派發政策與三廠提交(<code>dpp_demo:*</code>),回到初始狀態。</p>
+    <div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">取消</button>
+    <button class="btn warn" onclick="doReset()">確認重置</button></div>`);
+}
+function doReset(){
+  ['policy','submission:spin','submission:weave','submission:dye','keyRequests','events'].forEach(k=>Bus.del(k));
+  Bus.set('reset',{ts:Date.now()}); // 通知工廠端清掉已送狀態
+  state.policy=null; state.verifyResult=null; state.events=[]; state.unseen=0;
+  closeModal(); toast('已重置整批 Demo'); go('home');
+}
+function showDppJson(){
+  const ch=minted(); const dpp={ order:ORDER.no, product:ORDER.product, issuer:ORDER.issuer, dppHash:dppHashOf(ch),
+    chain:ch.map(s=>({stage:s.stage,token:s.block.tokenId,real:!!s.block.real,tokenURI:s.block.tokenURI||null,hash:s.block.hash||s.block.metadataHash,prev:s.block.prevTokenId??s.block.prevHash??null})),
+    public:{} };
+  ch.forEach(s=>{ dpp.public[s.stage]={}; s.fields.filter(f=>f.disclosure==='public').forEach(f=>dpp.public[s.stage][f.key]=f.val); });
+  openModal(`<h3>DPP JSON(只含明文)</h3><pre class="code">${JSON.stringify(dpp,null,2).replace(/</g,'&lt;')}</pre><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">關閉</button></div>`);
+}
+
+/* ---------- modal / toast ---------- */
+function openModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.remove('hidden');}
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
+function toast(msg){
+  const d=document.createElement('div'); d.textContent=msg;
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#20211c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),2800);
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ---------- 跨檔事件:工廠上傳時即時反應 ---------- */
+Bus.onChange((key,val)=>{
+  if(key.indexOf('submission:')===0 && val){
+    const st=stageById(val.stage);
+    if(!val.block){
+      /* === BLOCKCHAIN INTEGRATION POINT ===
+         工廠剛回傳原始提交(尚未上鏈)。平台「不」自動上鏈,而是在收集進度顯示
+         「🪙 Mint NFT」按鈕,由平台操作員手動鑄造(真實上鏈或模擬上鏈)。 */
+      logEvent((st?st.label:val.stage)+'廠 已上傳 · 待平台鑄造 NFT');
+      toast('📥 收到 '+(st?st.label:val.stage)+'廠 提交 · 請至收集進度鑄造 NFT');
+      if(state.view!=='collect' && state.view!=='policy') state.unseen++;
+      render();
+      return;
+    }
+    /* 已含 block(例如模擬上鏈於另一分頁完成) */
+    if(state.view!=='collect') state.unseen++;
+    logEvent((st?st.label:val.stage)+'廠 已上鏈 · Token #'+val.block.tokenId);
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
