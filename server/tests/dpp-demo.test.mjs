@@ -5,8 +5,8 @@ import test from "node:test";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const HTML_PATH = path.join(ROOT, "factory-endpoint.html");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const HTML_PATH = path.join(ROOT, "docs", "dpp-nft", "factory-endpoint.html");
 const CONTRACT_PATH = path.join(ROOT, "contracts", "SimpleDPPNFT.sol");
 const DEPLOYED_SEPOLIA_ADDRESS =
   "0x24aeeb254a48820b5b0bdcbdce980a725535718f";

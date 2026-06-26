@@ -14,7 +14,9 @@
 | `factory-weave.html` | 🧶 織布廠(第 2 站) |
 | `factory-dye.html` | 🏭 染整廠(第 3 站) |
 | `factory-endpoint.html` | 原始參考樣板(**未改動**,勿動) |
-| `DPP_NFT/` | 真實 IPFS + Sepolia NFT 鑄造專案(被平台沿用) |
+| `server/` | 🛰 本機 IPFS 上傳後端(`server.js` + `tests/`;原 `DPP_NFT/`) |
+| `contracts/` | 📜 Sepolia NFT 合約 `SimpleDPPNFT.sol`(被平台沿用) |
+| `docs/` | 📚 CONTEXT、計畫、README,及原 DPP_NFT 文件(`docs/dpp-nft/`) |
 
 **三個工廠檔的 JS body 在 `===STAGE-CONFIG-END===` 之後完全相同**。改工廠邏輯時:
 只改 `factory-spin.html`,再用下列指令把 body 複製到 weave/dye:
@@ -88,13 +90,17 @@ PY
 ---
 
 ## 怎麼跑(真實鑄造)
+> 2026-06 重構:已併為單一根目錄專案(根目錄一個 `package.json` + 一個 git repo)。
+> 後端在 `server/server.js`、合約在 `contracts/`、文件在 `docs/`;前端 HTML 仍在根目錄。
 ```bash
-# 1) IPFS 上傳後端
-cd DPP_NFT && npm install && cp .env.example .env   # 填 PINATA_JWT
-npm start                                            # http://localhost:3001
+# 0) 安裝依賴(根目錄;.env 已在根目錄,填好 PINATA_JWT)
+npm install
+
+# 1) IPFS 上傳後端(根目錄)
+npm start            # = node server/server.js → http://localhost:3001
 
 # 2) 以 HTTP 提供 fabric(錢包 + 跨來源 fetch 需 http://localhost 來源)
-cd .. && python3 -m http.server 8000                 # 開 http://localhost:8000/platform.html
+npm run serve        # = python3 -m http.server 8000 → http://localhost:8000/platform.html
 ```
 - 需 MetaMask 切到 **Sepolia** 且有測試 ETH。
 - 無 backend/錢包/網路時,全程改按 **🧪 模擬上鏈** 仍可完成 Demo。
@@ -112,10 +118,10 @@ cd .. && python3 -m http.server 8000                 # 開 http://localhost:8000
 - `ethers` 從 jsDelivr CDN 載入 → 真實鑄造需連外網;離線改用模擬。
 - 尚未在真實鏈上跑過(本環境無錢包/瀏覽器),**需使用者在瀏覽器手測**真實 mint 路徑。
 - 合約 `mintDPP` 為 unrestricted(任何人可鑄),demo 用沒問題;正式需加 issuer 權限。
-- `factory-endpoint.html`(根目錄那個參考樣板)刻意未改;`DPP_NFT/` 內也有同名檔(不同檔)。
+- `factory-endpoint.html`(根目錄那個參考樣板)刻意未改;另一份不同檔的同名參考已移到 `docs/dpp-nft/factory-endpoint.html`。
 
 ## 重要檔案索引
-- 計畫文件:`PLATFORM_NFT_MINT_PLAN.md`(第 8 項的完整計畫,含原始碼行號參照)。
-- 合約:`DPP_NFT/contracts/SimpleDPPNFT.sol`(`mintDPP(to,tokenURI_,metadataHash,schemaHash,orderHash,stage,previousTokenId)`,emit `DPPMinted`)。
-- 後端:`DPP_NFT/server.js`(`POST /upload-metadata` → `{cid,tokenURI,gatewayURL}`;`GET /fetch-metadata`)。
-- 移植來源:`DPP_NFT/factory-endpoint.html`(doSign 在 ~1041–1146 行)。
+- 計畫文件:`docs/PLATFORM_NFT_MINT_PLAN.md`(第 8 項的完整計畫,含原始碼行號參照)。
+- 合約:`contracts/SimpleDPPNFT.sol`(`mintDPP(to,tokenURI_,metadataHash,schemaHash,orderHash,stage,previousTokenId)`,emit `DPPMinted`)。
+- 後端:`server/server.js`(`POST /upload-metadata` → `{cid,tokenURI,gatewayURL}`;`GET /fetch-metadata`);測試 `server/tests/`。
+- 移植來源:`docs/dpp-nft/factory-endpoint.html`(doSign 在 ~1041–1146 行)。

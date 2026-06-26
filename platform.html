@@ -174,7 +174,7 @@ const CONTRACT_ABI = [
 ];
 const SEPOLIA_CHAIN_ID = 11155111;
 const SEPOLIA_CHAIN_HEX = '0xaa36a7';
-const IPFS_UPLOAD_ENDPOINT = 'http://localhost:3001/upload-metadata';   // DPP_NFT/server.js
+const IPFS_UPLOAD_ENDPOINT = 'http://localhost:3001/upload-metadata';   // server/server.js
 let REAL_MINT = true;   // 真實上鏈;按「🧪 模擬上鏈」可離線改走模擬區塊
 
 /* ---------- 跨檔資料匯流排(與工廠端共用同源 localStorage) ---------- */
@@ -297,7 +297,7 @@ async function uploadMetadataToIPFS(metadata){
   try{
     response=await fetch(IPFS_UPLOAD_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(metadata)});
   }catch(e){
-    throw new Error(`無法連接本機 IPFS 上傳服務 (${IPFS_UPLOAD_ENDPOINT})。請先在 DPP_NFT 執行 npm start。`);
+    throw new Error(`無法連接本機 IPFS 上傳服務 (${IPFS_UPLOAD_ENDPOINT})。請先在專案根目錄執行 npm start。`);
   }
   let result=null; try{result=await response.json();}catch(_){}
   if(!response.ok) throw new Error(result?.error||`IPFS 上傳失敗 (HTTP ${response.status})。`);
@@ -494,7 +494,7 @@ function vCollect(){
     <button class="btn" onclick="refreshAll()">↻ 重新整理</button>
     ${mn>=3?`<button class="btn pri" onclick="go('dpp')">前往 DPP / QR →</button>`:''}
   </div>
-  <div class="callout jewel"><div class="t">🪙 鑄造規則</div>「🪙 Mint NFT」走真實流程:把該站 metadata 上傳 IPFS、再以平台錢包呼叫 <code>mintDPP</code> 鑄到 Sepolia(需開啟 DPP_NFT backend 與錢包)。離線時用「🧪 模擬上鏈」。</div>`;
+  <div class="callout jewel"><div class="t">🪙 鑄造規則</div>「🪙 Mint NFT」走真實流程:把該站 metadata 上傳 IPFS、再以平台錢包呼叫 <code>mintDPP</code> 鑄到 Sepolia(需在根目錄執行 npm start 開後端、並連錢包)。離線時用「🧪 模擬上鏈」。</div>`;
 }
 
 function vChainExplorer(){
