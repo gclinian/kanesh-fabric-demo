@@ -4,34 +4,30 @@
 > 注意:此環境 `git` 不可用、**沒有 node/deno/bun**(無法跑 JS 語法檢查),驗證靠結構檢查 + 瀏覽器手測。
 
 ## 專案是什麼
-紡織供應鏈「數位產品護照(DPP)」互動原型。一個雲端平台 + 三個工廠端點,
-四個 HTML 檔以**同源 `localStorage`(鍵前綴 `dpp_demo:`)當訊息匯流排**互通。
+紡織供應鏈「數位產品護照(DPP)」互動原型。一個雲端平台 + 工廠端點(**三站合一頁**),
+以**同源 `localStorage`(鍵前綴 `dpp_demo:`)當訊息匯流排**互通(平台開一個分頁、工廠開一個分頁)。
 
 | 檔案 | 角色 |
 |---|---|
 | `platform.html` | ☁ Kanesh 雲端平台 / DPP 發行方(派政策、收集、**鑄造 NFT**、區塊鏈瀏覽、DPP+QR) |
-| `factory-spin.html` | 🧵 紡紗廠(序列第 1 站) |
-| `factory-weave.html` | 🧶 織布廠(第 2 站) |
-| `factory-dye.html` | 🏭 染整廠(第 3 站) |
+| `factory.html?stage=spin\|weave\|dye` | 🧵🧶🏭 工廠端(三站合一;`?stage=` 決定 紡紗/織布/染整) |
 | `factory-endpoint.html` | 原始參考樣板(**未改動**,勿動) |
+| `assets/css/` | 🎨 共用樣式:`tokens.css`(顏色/尺寸變數)、`base.css`(佈局)、`components.css`(元件);平台+工廠共用 |
+| `assets/js/factory-app.js` | 🧠 三廠共用應用邏輯(classic top-level script) |
+| `stages/{spin,weave,dye}.js` | 各站設定(`window.STAGE` + `window.FIELDS`,唯一各廠差異) |
 | `server/` | 🛰 本機 IPFS 上傳後端(`server.js` + `tests/`;原 `DPP_NFT/`) |
 | `contracts/` | 📜 Sepolia NFT 合約 `SimpleDPPNFT.sol`(被平台沿用) |
 | `docs/` | 📚 CONTEXT、計畫、README,及原 DPP_NFT 文件(`docs/dpp-nft/`) |
 
-**三個工廠檔的 JS body 在 `===STAGE-CONFIG-END===` 之後完全相同**。改工廠邏輯時:
-只改 `factory-spin.html`,再用下列指令把 body 複製到 weave/dye:
-```bash
-cd /ibmnas/427/r115/gclin/Desktop/jeff/fabric
-spin_end=$(grep -n "STAGE-CONFIG-END" factory-spin.html | cut -d: -f1)
-awk -v s="$spin_end" 'NR>s' factory-spin.html > /tmp/spinbody.txt
-for f in weave dye; do
-  end=$(grep -n "STAGE-CONFIG-END" factory-$f.html | cut -d: -f1)
-  awk -v e="$end" 'NR<=e' factory-$f.html > /tmp/${f}_head.txt
-  cat /tmp/${f}_head.txt /tmp/spinbody.txt > factory-$f.html
-done
-# 驗證 body 一致:
-for f in weave dye; do diff <(awk '/STAGE-CONFIG-END/{p=1}p' factory-spin.html) <(awk '/STAGE-CONFIG-END/{p=1}p' factory-$f.html) >/dev/null && echo "$f ok"; done
-```
+## 怎麼改前端(2026-06 方案 B 重構後)
+前端已抽成「共用資產 + 單一工廠頁」,**三工廠檔已合併,不再有 awk 複製儀式**:
+- **改顏色 / 圓角 / 側欄寬** → 只改 `assets/css/tokens.css`(平台與工廠共用;工廠靛色主題寫在 `body.factory`)。
+- **改整體佈局** → `assets/css/base.css`;**改元件外觀**(按鈕/卡片/徽章…)→ `assets/css/components.css`。
+- **改三廠共用邏輯** → 只改 `assets/js/factory-app.js`(一處,三站同步生效)。
+  ⚠️ 它是 classic top-level script,所有 `function` **須維持全域**(畫面用內聯 `onclick="go(...)"` 呼叫),**勿包 IIFE / 勿改 ES module**,否則按鈕全失效。
+- **改某一站的欄位 / 站別色** → 只改 `stages/<id>.js`(`window.STAGE` + `window.FIELDS`)。
+- **加第 4 站** → 新增 `stages/<id>.js`,並把 `factory.html` 載入器的 `allowed` 陣列加上該 id。
+- 驗證:`npm run serve` 後開 `http://localhost:8000/factory.html?stage=spin`(及 weave/dye)。
 
 ## 平時驗證手法(無 node)
 ```bash
@@ -65,14 +61,14 @@ PY
 - 鑄造路徑:**真實上鏈 + 離線模擬備援**(兩個按鈕:🪙 Mint NFT / 🧪 模擬上鏈)。
 - 序列解鎖:**鑄造完成後**才解鎖下一站(`received = minted().length`),
   以便每站 `previousTokenId` 指向前一站真實 `tokenId`(on-chain 溯源)。
-- 設定:沿用 `DPP_NFT` 既有 Sepolia 合約 `0x24aeeb254a48820b5b0bdcbdce980a725535718f`
-  與 `DPP_NFT/server.js` backend(`localhost:3001`)。
+- 設定:沿用既有 Sepolia 合約 `0x24aeeb254a48820b5b0bdcbdce980a725535718f`
+  與 `server/server.js` backend(`localhost:3001`)。
 - Token 擁有者:平台連線的單一錢包(平台託管)。
 
 ### 第 8 項實作細節(`platform.html`)
 - 載入 `ethers@6.17.0` UMD;頂部加 `CONTRACT_ADDRESS`/`CONTRACT_ABI`/Sepolia 參數/
   `IPFS_UPLOAD_ENDPOINT`/`let REAL_MINT=true`;`STAGES` 每項加 `schema`、`factoryDid`。
-- 移植自 `DPP_NFT/factory-endpoint.html`:`stableStringify`、`buildStageMetadata(stage,sub,prevTokenId)`、
+- 移植自 `docs/dpp-nft/factory-endpoint.html`:`stableStringify`、`buildStageMetadata(stage,sub,prevTokenId)`、
   `computeDPPHashes`、`uploadMetadataToIPFS`、`walletState`/`connectWallet`/`switchToSepolia`/`isSepolia`。
 - `mintStageToken(stageId)`:連錢包→建 metadata/keccak256→上傳 IPFS→`contract.mintDPP(...)`→
   `tx.wait()`→解析 `DPPMinted` 取 `tokenId`→把 **block 回填** `submission:<stage>`
@@ -106,7 +102,7 @@ npm run serve        # = python3 -m http.server 8000 → http://localhost:8000/p
 - 無 backend/錢包/網路時,全程改按 **🧪 模擬上鏈** 仍可完成 Demo。
 
 ## 端到端測試流程
-1. 平台 → 政策建構器 → 派發**紡紗** → 開 `factory-spin.html` 完成揭露決策→送出。
+1. 平台 → 政策建構器 → 派發**紡紗** → 開 `factory.html?stage=spin` 完成揭露決策→送出。
 2. 平台「收集進度」出現 **🪙 Mint NFT**。按下 → 錢包確認 → 真實 Token + Etherscan 連結;
    織布站解鎖。
 3. 重複 織布、染整;確認每站 `previousTokenId` = 前一站真實 `tokenId`。

@@ -1,0 +1,32 @@
+/* ============================================================
+   tokens.css — 設計變數(顏色 / 陰影 / 字體 / 尺寸)的唯一真實來源
+   想全站改色、改圓角、改側欄寬度 → 只改這個檔。
+   platform.html 與 factory.html 都載入本檔。
+   ============================================================ */
+:root{
+  /* 表面 & 文字 */
+  --paper:#f6f3ec; --surface:#fff; --surface2:#fbfaf6; --ink:#20211c; --soft:#44463e;
+  --muted:#76776d; --line:#e4dfd2; --lineSoft:#efeadd;
+
+  /* 品牌主色(預設 = 平台藍) */
+  --accent:#1d4ed8; --accentD:#1e40af; --teal:#0d9488;
+
+  /* 語意狀態色 */
+  --good:#15803d; --goodBg:#eaf5ec; --warn:#b45309; --warnBg:#fbf1e3;
+  --jewel:#9333ea; --jewelBg:#f4ecfb; --info:#eef0fb;
+
+  /* 形狀 & 字體 */
+  --radius:13px; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(40,38,30,.06);
+  --font:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+
+  /* 版面尺寸 */
+  --side-w:236px; --main-max:1040px;
+}
+
+/* 工廠主題:靛色主色 + 略窄版面。<body class="factory"> 時生效。
+   各站頂欄上緣色另由 JS 注入 --rolecolor(見 factory-app.js)。 */
+body.factory{
+  --accent:#4338ca; --accentD:#3730a3;
+  --side-w:228px; --main-max:1000px;
+}
