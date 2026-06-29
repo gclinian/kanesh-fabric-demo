@@ -53,6 +53,7 @@ const NAV=[
   ['boundary','🔏 加密與送出'],
   ['chain','⛓ 上鏈狀態'],
   ['_c2','管理'],
+  ['verify','🔓 驗證請求','verify'],
   ['settings','⚙ 設定'],
 ];
 function renderNav(){
@@ -64,6 +65,7 @@ function renderNav(){
     /* ★ 通知燈由狀態驅動:只有「平台已實際派發政策給本廠、且尚未上傳」時才亮。
        離線範例(MOCK_POLICY)不會點亮,避免清空 localStorage 後紅點仍預設恆亮。 */
     if(badgeKind==='inbox'){ if(state.policyIsReal && !state.submitted) badge='<span class="b">1</span>'; }
+    if(badgeKind==='verify'){ const n=pendingKeyReqs().length; if(n) badge='<span class="b">'+n+'</span>'; }
     h+=`<a class="${state.view===v?'on':''}" onclick="go('${v}')">${label}${badge}</a>`;
   }
   document.getElementById('nav').innerHTML=h;
@@ -142,7 +144,16 @@ function vHome(){
 
 function vInbox(){
   const p=state.policy;
-  const tag=state.policyIsReal?'<span class="chip">🔗 平台即時派發</span>':'<span class="chip demo">內建範例(平台尚未派發)</span>';
+  if(!state.policyIsReal && !state.submitted){
+    return `${stepper('inbox')}<h1>政策收件匣</h1>
+    <p>雲端(平台 / DPP 發行方)送來「要收哪些特徵、保存多久」。對應工作流①下行。</p>
+    <div class="card" style="border-left:4px solid var(--line)">
+      <div class="row"><b>⚪ 尚未收到收集政策</b><span class="pill">等待平台派發</span></div>
+      <p style="margin:6px 0 0">尚未有任何收集政策送達本廠。請在平台(Kanesh)「政策建構器」派發 ${STAGE.label} 站的政策;收到後這裡會出現待決策的政策卡、側欄通知燈也會亮。</p>
+    </div>
+    <div class="callout info"><div class="t">🔌 離線範例</div>未連線平台時,可直接到「揭露決策」用內建範例資料體驗流程。</div>`;
+  }
+  const tag=state.policyIsReal?'<span class="chip">🔗 平台即時派發</span>':'<span class="chip demo">內建範例</span>';
   return `${stepper('inbox')}<h1>政策收件匣</h1>
   <p>雲端(平台 / DPP 發行方)送來「要收哪些特徵、保存多久」。對應工作流①下行。</p>
   ${state.submitted?'<div class="callout key"><div class="t">✓ 已完成</div>本政策的資料已上傳上鏈;側欄通知燈已熄滅。可在「上鏈狀態」查看。</div>':''}
@@ -275,10 +286,40 @@ function vChain(){
 
 function vSimple(title,body){return `<h1>${title}</h1>${body}`;}
 
+/* ---------- 驗證請求 / 金鑰放行(平台向本廠申請解密加密欄位)---------- */
+function myKeyReqs(){ return (Bus.get('keyRequests')||[]).filter(r=>r.stage===STAGE.id); }
+function pendingKeyReqs(){ return myKeyReqs().filter(r=>r.status==='pending'); }
+function decideKey(key,decision){
+  const reqs=Bus.get('keyRequests')||[];
+  const r=reqs.find(x=>x.stage===STAGE.id && x.key===key);
+  if(!r){ toast('找不到該請求'); return; }
+  r.status=decision; r.decidedTs=nowUTC();
+  Bus.set('keyRequests',reqs);
+  toast(decision==='approved'?'🔓 已放行:平台法規端可解密此欄位':'⛔ 已拒絕:維持不可解密');
+  render();
+}
+function vVerify(){
+  const reqs=myKeyReqs();
+  const labelOf=k=>{const f=FIELDS.find(x=>x.key===k);return f?f.label:k;};
+  const rows=reqs.map(r=>{
+    let action;
+    if(r.status==='approved') action=`<span class="chip">✅ 已放行</span> <button class="btn ghost" onclick="decideKey('${r.key}','denied')">收回</button>`;
+    else if(r.status==='denied') action=`<span class="chip warn">⛔ 已拒絕</span> <button class="btn ghost" onclick="decideKey('${r.key}','approved')">改為放行</button>`;
+    else action=`<button class="btn pri" onclick="decideKey('${r.key}','approved')">放行解密</button> <button class="btn warn" onclick="decideKey('${r.key}','denied')">拒絕</button>`;
+    return `<tr><td>🔒 ${labelOf(r.key)}</td><td class="fval">${r.key}</td><td class="fval">${r.ts||''}</td><td>${action}</td></tr>`;
+  }).join('');
+  return `<h1>驗證請求 · 金鑰放行</h1>
+  <p>平台(供法規查驗)針對本廠<b>加密上傳</b>的欄位申請解密鑰匙。可逐項<b>放行</b>或<b>拒絕</b>;放行後,平台「法規機關」視角才看得到該欄位原始值(對應工作流②)。</p>
+  ${reqs.length?`<table class="ftable"><tr><th>欄位</th><th>key</th><th>申請時間</th><th>決定</th></tr>${rows}</table>`
+    :`<div class="card" style="border-left:4px solid var(--line)"><div class="row"><b>⚪ 目前沒有待處理的驗證請求</b></div>
+       <p style="margin:6px 0 0">當平台在其「金鑰 / 驗證請求」頁向本廠申請某個加密欄位的解密鑰匙時,這裡會出現待放行項目、側欄通知燈也會亮。</p></div>`}
+  <div class="callout jewel"><div class="t">🔓 解密同意權在本廠</div>資料一律加密送回平台;密文要能被解讀須經本廠在此放行。拒絕則平台 / 法規端維持看不到原始值。</div>`;
+}
+
 function render(){
   renderTopbar(); renderNav();
   const v=state.view;
-  const map={home:vHome,inbox:vInbox,disclose:vDisclose,preprocess:vPreprocess,boundary:vBoundary,chain:vChain};
+  const map={home:vHome,inbox:vInbox,disclose:vDisclose,preprocess:vPreprocess,boundary:vBoundary,chain:vChain,verify:vVerify};
   let html;
   if(map[v]) html=map[v]();
   else if(v==='settings') html=vSimple('設定',`<div class="card">
@@ -288,7 +329,7 @@ function render(){
     <div class="kv">TEE 連線:🟢 已連線</div>
     <div class="kv">資料匯流排:${state.policyIsReal?'🔗 平台已連線':'🔌 離線(內建範例政策)'}</div>
     <div class="kv">部署模式:on-prem(Windows 服務 / Linux daemon)</div>
-    <div class="kv">本廠權限:僅能決定各欄位「公開 / 加密」;誰可解密、上鏈與否由平台控管</div>
+    <div class="kv">本廠權限:決定各欄位「公開 / 加密」,並對平台的解密申請逐項放行 / 拒絕(見「驗證請求」);上鏈與否由平台控管</div>
     <div class="kv">語言:繁體中文</div>
     <div class="row" style="margin-top:10px"><button class="btn warn" onclick="resetSubmission()">重置本廠提交(Demo)</button></div>
   </div>`);
@@ -390,6 +431,12 @@ Bus.onChange((key,val)=>{
     if(state.chainAnim){
       const t=setInterval(()=>{state.chainAnim.step++; render(); if(state.chainAnim.step>=5){clearInterval(t); state.chainAnim=null;}},350);
     } else { render(); }
+  }
+  /* 平台向本廠申請解密某加密欄位 → 亮通知燈、提示去「驗證請求」放行 */
+  if(key==='keyRequests'){
+    const pend=(val||[]).filter(r=>r.stage===STAGE.id && r.status==='pending').length;
+    if(pend) toast('🔓 平台申請解密本廠 '+pend+' 個欄位 · 請至「驗證請求」放行');
+    render();
   }
   if(key==='reset'){ Bus.del('submission:'+STAGE.id); state.submitted=false; state.submission=null; state.chain=null; state.preprocessed=false; FIELDS.forEach(f=>f.disclosure=f.rec); render(); }
 });

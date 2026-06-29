@@ -428,15 +428,21 @@ function dppPreview(ch){
   /* 揭露規則(兩種對象):
      - 消費者:只看工廠選擇「公開」的欄位(明文)
      - 法規機關:可額外審閱工廠「加密上傳」的欄位(具解密權,看得到原始值) */
-  let body='', visTotal=0;
+  const keyReqs=Bus.get('keyRequests')||[];
+  const keyApproved=(stg,k)=>keyReqs.some(r=>r.stage===stg&&r.key===k&&r.status==='approved');
+  let body='', visTotal=0, priApproved=0;
   ch.forEach(s=>{
     const cat=stageById(s.stage);
     const catVal=k=>{const c=cat&&cat.fields.find(x=>x.key===k);return c?c.val:'(原始值)';};
     const pubs=s.fields.filter(f=>f.disclosure==='public');
     const pris=s.fields.filter(f=>f.disclosure==='private');
-    visTotal += pubs.length + (isReg?pris.length:0);
+    const apprPris=isReg?pris.filter(f=>keyApproved(s.stage,f.key)):[];
+    priApproved += apprPris.length;
+    visTotal += pubs.length + apprPris.length;
     const pubRows=pubs.map(f=>`<div class="attr"><span class="a-l">🌐 ${f.label}</span><span class="a-v">${f.val}</span></div>`).join('');
-    const regRows=isReg?pris.map(f=>`<div class="attr"><span class="a-l" style="color:var(--jewel)">🔓 ${f.label} <span class="vis">(加密欄位 · 法規解密)</span></span><span class="a-v" style="color:var(--jewel)">${catVal(f.key)}</span></div>`).join(''):'';
+    const regRows=isReg?pris.map(f=>keyApproved(s.stage,f.key)
+      ?`<div class="attr"><span class="a-l" style="color:var(--jewel)">🔓 ${f.label} <span class="vis">(已放行解密)</span></span><span class="a-v" style="color:var(--jewel)">${catVal(f.key)}</span></div>`
+      :`<div class="attr"><span class="a-l">🔒 ${f.label} <span class="vis">(待工廠放行)</span></span><span class="a-v vis">向工廠申請鑰匙後可見</span></div>`).join(''):'';
     body+=`<div class="bdcol pub"><h4>${cat?cat.brand:s.stage} · ${s.stageLabel} <span class="pill">Token #${s.block.tokenId}</span></h4>
       ${pubs.length?pubRows:'<div class="vis">(本廠無公開欄位)</div>'}
       ${regRows}
@@ -448,7 +454,7 @@ function dppPreview(ch){
   <div class="row"><span>揭露對象:</span><span class="seg">
     <button class="${aud==='consumer'?'on':''}" onclick="setAud('consumer')">消費者</button>
     <button class="${aud==='regulator'?'on':''}" onclick="setAud('regulator')">法規機關</button>
-  </span><span class="right"></span><span class="vis">本對象可見 ${visTotal} 欄(🌐 公開 ${pubTotal}${isReg?` + 🔓 解密 ${priTotal}`:` · 🔒 加密隱藏 ${priTotal}`})</span></div>
+  </span><span class="right"></span><span class="vis">本對象可見 ${visTotal} 欄(🌐 公開 ${pubTotal}${isReg?` + 🔓 已解密 ${priApproved}${priApproved<priTotal?` · 🔒 待放行 ${priTotal-priApproved}`:''}`:` · 🔒 加密隱藏 ${priTotal}`})</span></div>
 
   <div class="grid2" style="margin-top:8px;align-items:start">
     <div class="passport">
@@ -486,9 +492,13 @@ function vKeys(){
   <p>平台手上每個工廠的密文都「打不開」。要查驗加密欄位,必須<b>向該工廠申請鑰匙</b>,由工廠在其端點放行。</p>
   ${enc.length?`<h2>鏈上的加密欄位(${enc.length})</h2>
   <table class="ftable"><tr><th>階段</th><th>欄位</th><th>密文(平台所見)</th><th></th></tr>
-    ${enc.map(e=>{const pending=reqs.find(r=>r.stage===e.stage&&r.key===e.key);
+    ${enc.map(e=>{const r=reqs.find(x=>x.stage===e.stage&&x.key===e.key); const st=r&&r.status; let cell;
+      if(st==='approved') cell=`<span class="chip">✅ 工廠已放行</span>`;
+      else if(st==='denied') cell=`<span class="chip warn">⛔ 工廠已拒絕</span> <button class="btn ghost" onclick="requestKey('${e.stage}','${e.key}')">重新申請</button>`;
+      else if(st==='pending') cell=`<span class="chip demo">⏳ 已申請 · 待工廠放行</span>`;
+      else cell=`<button class="btn" onclick="requestKey('${e.stage}','${e.key}')">向工廠申請鑰匙</button>`;
       return `<tr><td>${e.stageLabel}</td><td>🔒 ${e.label}</td><td class="fval">${e.cipher||'ENC(••••)'}</td>
-      <td>${pending?`<span class="chip demo">已申請 · 待工廠放行</span>`:`<button class="btn" onclick="requestKey('${e.stage}','${e.key}')">向工廠申請鑰匙</button>`}</td></tr>`;}).join('')}
+      <td>${cell}</td></tr>`;}).join('')}
   </table>`:'<div class="callout info">目前鏈上沒有加密欄位,或尚無提交。</div>'}
   <div class="callout key"><div class="t">🛈 對應工作流②</div>「ALL 資料都會送回平台,但只有公開欄位是明文;其餘是密文,需經工廠同意取得鑰匙才能驗證。」工廠在其「驗證請求」頁放行後,智能合約 / TEE 才會釋放該欄位的解密能力。</div>`;
 }
@@ -666,8 +676,10 @@ function verifyChain(){
 function setAud(a){state.audience=a;render();}
 function requestKey(stage,key){
   const reqs=Bus.get('keyRequests')||[];
-  if(!reqs.find(r=>r.stage===stage&&r.key===key)){ reqs.push({stage,key,from:'platform',status:'pending',ts:nowUTC()}); Bus.set('keyRequests',reqs);
-    logEvent('向 '+(stageById(stage)?stageById(stage).label:stage)+'廠 申請「'+key+'」解密鑰匙'); }
+  let r=reqs.find(x=>x.stage===stage&&x.key===key);
+  if(r){ r.status='pending'; r.ts=nowUTC(); delete r.decidedTs; } else { reqs.push({stage,key,from:'platform',status:'pending',ts:nowUTC()}); }
+  Bus.set('keyRequests',reqs);
+  logEvent('向 '+(stageById(stage)?stageById(stage).label:stage)+'廠 申請「'+key+'」解密鑰匙');
   toast('已送出鑰匙申請 · 需該工廠在其「驗證請求」頁放行');
   render();
 }
@@ -720,6 +732,8 @@ Bus.onChange((key,val)=>{
     logEvent((st?st.label:val.stage)+'廠 已上鏈 · Token #'+val.block.tokenId);
     render();
   }
+  /* 工廠在其「驗證請求」頁放行/拒絕了解密鑰匙 → 反映到金鑰頁與法規視角 */
+  if(key==='keyRequests'){ toast('🔑 工廠已更新驗證請求放行狀態'); render(); }
 });
 
 render();
