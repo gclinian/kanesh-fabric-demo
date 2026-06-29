@@ -11,7 +11,6 @@
 |---|---|
 | `platform.html` | ☁ Kanesh 雲端平台 / DPP 發行方(派政策、收集、**鑄造 NFT**、區塊鏈瀏覽、DPP+QR) |
 | `factory.html?stage=spin\|weave\|dye` | 🧵🧶🏭 工廠端(三站合一;`?stage=` 決定 紡紗/織布/染整) |
-| `factory-endpoint.html` | 原始參考樣板(**未改動**,勿動) |
 | `assets/css/` | 🎨 共用樣式:`tokens.css`(顏色/尺寸變數)、`base.css`(佈局)、`components.css`(元件);平台+工廠共用 |
 | `assets/js/factory-app.js` | 🧠 三廠共用應用邏輯(classic top-level script) |
 | `stages/{spin,weave,dye}.js` | 各站設定(`window.STAGE` + `window.FIELDS`,唯一各廠差異) |
@@ -114,7 +113,7 @@ npm run serve        # = python3 -m http.server 8000 → http://localhost:8000/p
 - `ethers` 從 jsDelivr CDN 載入 → 真實鑄造需連外網;離線改用模擬。
 - 尚未在真實鏈上跑過(本環境無錢包/瀏覽器),**需使用者在瀏覽器手測**真實 mint 路徑。
 - 合約 `mintDPP` 為 unrestricted(任何人可鑄),demo 用沒問題;正式需加 issuer 權限。
-- `factory-endpoint.html`(根目錄那個參考樣板)刻意未改;另一份不同檔的同名參考已移到 `docs/dpp-nft/factory-endpoint.html`。
+- 根目錄原本的參考樣板 `factory-endpoint.html` 已刪除(無任何程式碼引用)。仍保留 `docs/dpp-nft/factory-endpoint.html`(不同檔,DPP_NFT 原始端點,平台 mint 程式碼的移植來源,且 `dpp-demo.test.mjs` 會讀它,勿刪)。
 
 ## 重要檔案索引
 - 計畫文件:`docs/PLATFORM_NFT_MINT_PLAN.md`(第 8 項的完整計畫,含原始碼行號參照)。

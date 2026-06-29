@@ -9,7 +9,6 @@
 |---|---|---|
 | `platform.html` | ☁ 雲端平台 / DPP 發行方 | 派政策、收集、區塊鏈瀏覽、組 DPP + QR |
 | `factory.html?stage=spin\|weave\|dye` | 🧵🧶🏭 工廠端(三站合一) | 紡紗 / 織布 / 染整,依序串接 |
-| `factory-endpoint.html` | 原始參考樣板(未改動) | — |
 | `assets/css/`、`assets/js/`、`stages/` | 前端共用資產 | 樣式 token / 共用邏輯 / 各站設定 |
 
 這些頁面以同源 `localStorage`(鍵前綴 `dpp_demo:`)當訊息匯流排互通;

@@ -70,7 +70,6 @@ npm run serve
 ```
 platform.html            雲端平台(自帶 JS;CSS 走共用樣式)
 factory.html             工廠端三站合一,?stage=spin|weave|dye
-factory-endpoint.html    原始參考樣板(未改動)
 assets/css/              tokens.css(顏色/尺寸)· base.css(佈局)· components.css(元件)
 assets/js/factory-app.js 三廠共用應用邏輯
 stages/{spin,weave,dye}.js  各站設定(欄位 + 站別色)
@@ -84,6 +83,8 @@ docs/                    交接脈絡 CONTEXT.md、實作計畫、舊版說明
 - 佈局 → `assets/css/base.css`;元件外觀 → `assets/css/components.css`
 - 三廠共用邏輯 → `assets/js/factory-app.js`
 - 各站欄位 / 站別色 → `stages/<id>.js`
+
+`npm run serve` 是**不快取的 dev server**(`scripts/dev-server.py`),改完存檔後**一般重新整理**就會看到最新版,不必硬重新整理。
 
 > `assets/js/factory-app.js` 是 classic top-level script,所有函式須維持全域(畫面用內聯 `onclick` 呼叫),請勿包進 IIFE 或改成 ES module。
 
