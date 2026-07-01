@@ -6,7 +6,7 @@ window.STAGE = {
   labelEn:'Spinning', roleEn:'Spinning (spin)',
   brand:'Prosperity 紡紗廠', brandEn:'Prosperity Spinning Mill',
   titleZh:'紡紗廠 Endpoint · 互動原型', titleEn:'Spinning Mill Endpoint · Prototype',
-  color:'#0d9488',           // 角色色(頂欄上緣)
+  color:'#0E4F4A',           // 角色色(頂欄上緣)
   orderNo:'#A2207',
 };
 window.FIELDS = [

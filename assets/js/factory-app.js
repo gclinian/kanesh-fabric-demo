@@ -412,7 +412,7 @@ function closeModal(){document.getElementById('modal').classList.add('hidden');}
 function toast(msg){
   const d=document.createElement('div');
   d.textContent=msg;
-  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#20211c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw';
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B1A16;color:#F4F1E9;padding:10px 18px;border-radius:999px;font-size:13.5px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw';
   document.body.appendChild(d); setTimeout(()=>d.remove(),2800);
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});

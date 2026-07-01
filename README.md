@@ -79,7 +79,8 @@ docs/                    交接脈絡 CONTEXT.md、實作計畫、舊版說明
 ```
 
 ### 改前端介面
-- 顏色 / 圓角 / 側欄寬 → `assets/css/tokens.css`(平台與工廠共用;工廠靛色主題在 `body.factory`)
+- **設計系統**:方向與規範見 [`DESIGN.md`](DESIGN.md)(Industrial-Archival:暖紙 + 墨黑 + petrol,Fraunces / General Sans / JetBrains Mono,細線面板)。改視覺前先讀它。
+- 顏色 / 圓角 / 側欄寬 → `assets/css/tokens.css`(平台與工廠共用);字體自我托管於 `assets/fonts/`(`assets/css/fonts.css`,維持離線)
 - 佈局 → `assets/css/base.css`;元件外觀 → `assets/css/components.css`
 - 三廠共用邏輯 → `assets/js/factory-app.js`
 - 各站欄位 / 站別色 → `stages/<id>.js`

@@ -6,7 +6,7 @@ window.STAGE = {
   labelEn:'Dyeing', roleEn:'Dyeing (dye-fnsh)',
   brand:'Evergreen 染整廠', brandEn:'Evergreen Dyeing Mill',
   titleZh:'染整廠 Endpoint · 互動原型', titleEn:'Dyeing Mill Endpoint · Prototype',
-  color:'#4338ca',
+  color:'#37477A',
   orderNo:'#A2207',
 };
 window.FIELDS = [

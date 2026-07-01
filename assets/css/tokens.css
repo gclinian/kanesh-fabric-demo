@@ -1,32 +1,34 @@
 /* ============================================================
-   tokens.css — 設計變數(顏色 / 陰影 / 字體 / 尺寸)的唯一真實來源
-   想全站改色、改圓角、改側欄寬度 → 只改這個檔。
-   platform.html 與 factory.html 都載入本檔。
+   tokens.css — 設計變數(唯一真實來源)。方向:Industrial-Archival。
+   見 DESIGN.md。改全站色/字/圓角只改這裡。platform + factory 共用。
+   字體自我托管(見 fonts.css);中文走系統 CJK fallback。
    ============================================================ */
 :root{
-  /* 表面 & 文字 */
-  --paper:#f6f3ec; --surface:#fff; --surface2:#fbfaf6; --ink:#20211c; --soft:#44463e;
-  --muted:#76776d; --line:#e4dfd2; --lineSoft:#efeadd;
+  /* 表面 & 文字 —— 暖紙 + 墨黑 */
+  --paper:#F4F1E9; --surface:#FFFFFF; --surface2:#FBF9F3; --ink:#1B1A16; --soft:#55534A;
+  --muted:#8A887C; --line:#E3DFD3; --lineSoft:#EEEAE0; --lineStrong:#D2CBBA;
 
-  /* 品牌主色(預設 = 平台藍) */
-  --accent:#1d4ed8; --accentD:#1e40af; --teal:#0d9488;
+  /* 主色 —— Petrol(深孔雀綠;非品類的亮綠/紫) */
+  --accent:#0E4F4A; --accentD:#0A3B37; --teal:#0E4F4A;
 
-  /* 語意狀態色 */
-  --good:#15803d; --goodBg:#eaf5ec; --warn:#b45309; --warnBg:#fbf1e3;
-  --jewel:#9333ea; --jewelBg:#f4ecfb; --info:#eef0fb;
+  /* 語意狀態(去飽和) */
+  --good:#3F6B47; --goodBg:#E9EFE7; --warn:#9A6A2F; --warnBg:#F4ECDD;
+  --jewel:#6B3F6E; --jewelBg:#F0E9F0; --info:#E7EEEC;   /* jewel=aubergine 加密/法規;info=petrol tint */
 
-  /* 形狀 & 字體 */
-  --radius:13px; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(40,38,30,.06);
-  --font:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  /* 形狀 & 陰影 —— 小圓角、壓平陰影(靠細線,不靠浮起) */
+  --radius:6px;
+  --shadow:0 1px 0 rgba(27,26,22,.03), 0 1px 3px rgba(27,26,22,.05);
+
+  /* 字體 —— 襯線標題 / grotesque 介面 / 等寬數據 */
+  --serif:'Fraunces',Georgia,'Songti TC','Noto Serif TC',serif;
+  --font:'General Sans',-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 
   /* 版面尺寸 */
-  --side-w:236px; --main-max:1040px;
+  --side-w:210px; --main-max:1040px;
 }
 
-/* 工廠主題:靛色主色 + 略窄版面。<body class="factory"> 時生效。
-   各站頂欄上緣色另由 JS 注入 --rolecolor(見 factory-app.js)。 */
+/* 工廠主題:沿用同一調色盤(品牌一致);各站頂欄色由 JS 注入 --rolecolor。 */
 body.factory{
-  --accent:#4338ca; --accentD:#3730a3;
-  --side-w:228px; --main-max:1000px;
+  --side-w:210px; --main-max:1000px;
 }

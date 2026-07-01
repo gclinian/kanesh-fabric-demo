@@ -1,0 +1,24 @@
+/* fonts.css — 自我托管字體(維持離線、無外網相依)。
+   Fraunces(襯線標題)· General Sans(介面)· JetBrains Mono(數據)。
+   中文不在這些字體內,交給 tokens.css 字型堆疊裡的系統 CJK 字體 fallback。 */
+
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/fraunces-400.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/fraunces-500.woff2') format('woff2')}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:600;font-display:swap;
+  src:url('../fonts/fraunces-600.woff2') format('woff2')}
+
+@font-face{font-family:'General Sans';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/general-sans-400.woff2') format('woff2')}
+@font-face{font-family:'General Sans';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/general-sans-500.woff2') format('woff2')}
+@font-face{font-family:'General Sans';font-style:normal;font-weight:600;font-display:swap;
+  src:url('../fonts/general-sans-600.woff2') format('woff2')}
+@font-face{font-family:'General Sans';font-style:normal;font-weight:700;font-display:swap;
+  src:url('../fonts/general-sans-700.woff2') format('woff2')}
+
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../fonts/jetbrains-mono-400.woff2') format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../fonts/jetbrains-mono-500.woff2') format('woff2')}

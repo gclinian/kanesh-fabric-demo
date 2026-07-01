@@ -6,7 +6,7 @@ window.STAGE = {
   labelEn:'Weaving', roleEn:'Weaving (weave)',
   brand:'Harmony 織布廠', brandEn:'Harmony Weaving Mill',
   titleZh:'織布廠 Endpoint · 互動原型', titleEn:'Weaving Mill Endpoint · Prototype',
-  color:'#9333ea',
+  color:'#6B3F6E',
   orderNo:'#A2207',
 };
 window.FIELDS = [

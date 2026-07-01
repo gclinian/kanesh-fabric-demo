@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>雲端平台 · DPP 發行 · 互動原型</title>
+<link rel="stylesheet" href="assets/css/fonts.css">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/components.css">
@@ -243,7 +244,7 @@ function renderTopbar(){
         <rect width="32" height="32" rx="8" fill="url(#kaneshG)"/>
         <path d="M11 7v18M11 16l8.5-9M11 16l8.5 9" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
         <defs><linearGradient id="kaneshG" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#1d4ed8"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+          <stop stop-color="#0E4F4A"/><stop offset="1" stop-color="#2A7D74"/></linearGradient></defs>
       </svg>
       <span>KANESH <span style="font-weight:600;color:var(--muted)">· ${t('雲端平台','Cloud Platform')}</span></span>
     </span>
@@ -469,7 +470,7 @@ function dppPreview(ch){
 
   <div class="grid2" style="margin-top:8px;align-items:start">
     <div class="passport">
-      <div class="hd"><div class="eyebrow" style="color:#cfe1ff">DIGITAL PRODUCT PASSPORT</div>
+      <div class="hd"><div class="eyebrow" style="color:#A9A498">DIGITAL PRODUCT PASSPORT</div>
         <h3>${t(ORDER.product,ORDER.productEn)}</h3>
         <div style="opacity:.92;font-size:13px">${t('訂單','Order')} ${ORDER.no} · ${t('發行方','Issuer')} ${t(ORDER.issuer,ORDER.issuerEn)} · ${t('已上鏈三段','3 stages on-chain')}</div></div>
       <div class="bd">
@@ -720,7 +721,7 @@ function openModal(html){document.getElementById('modalBody').innerHTML=html;doc
 function closeModal(){document.getElementById('modal').classList.add('hidden');}
 function toast(msg){
   const d=document.createElement('div'); d.textContent=msg;
-  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#20211c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw';
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B1A16;color:#F4F1E9;padding:10px 18px;border-radius:6px;font-size:13.5px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw';
   document.body.appendChild(d); setTimeout(()=>d.remove(),2800);
 }
 document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
