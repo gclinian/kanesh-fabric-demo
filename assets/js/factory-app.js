@@ -14,9 +14,18 @@ const Bus={
   del(k){try{localStorage.removeItem(this.ns+k);}catch(e){}},
   onChange(cb){window.addEventListener('storage',e=>{if(e.key&&e.key.indexOf(this.ns)===0){let v=null;try{v=e.newValue?JSON.parse(e.newValue):null;}catch(_){}cb(e.key.slice(this.ns.length),v);}});}
 };
-/* 內建範例政策(離線 / 平台尚未派發時使用,確保單機可完整展示) */
-const MOCK_POLICY={ id:'POL-A2207', order:STAGE.orderNo, issuer:'LongAdvance 平台', retentionYears:10,
-  deadline:'2026-06-25', sig:'verified ✓', perStage:{ [STAGE.id]: FIELDS.map(f=>f.key) } };
+/* ---------- 多訂單:訂單命名空間(當前訂單由 ?order= 決定)---------- */
+function orders(){ return Bus.get('orders')||[]; }
+function orderById(id){ return orders().find(o=>o.id===id); }
+function curOrderId(){ try{ return new URLSearchParams(location.search).get('order'); }catch(e){ return null; } }
+function curOrder(){ return orderById(curOrderId()); }
+function curOrderNo(){ const o=curOrder(); return o?o.no:'—'; }
+function oget(k){ return Bus.get('order:'+curOrderId()+':'+k); }
+function oset(k,v){ Bus.set('order:'+curOrderId()+':'+k, v); }
+function odel(k){ Bus.del('order:'+curOrderId()+':'+k); }
+/* 有派政策給本廠(此 stage)的訂單 → 工廠收件匣 */
+function myOrders(){ return orders().filter(o=>{const p=Bus.get('order:'+o.id+':policy');return p&&p.perStage&&p.perStage[STAGE.id];}); }
+function orderStageStatus(oid){ const su=Bus.get('order:'+oid+':submission:'+STAGE.id); return su?(su.block?'minted':'submitted'):'pending'; }
 
 /* ---------- 工具 ---------- */
 function simpleHash(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*0x01000193)>>>0;}return ('00000000'+h.toString(16)).slice(-8);}
@@ -27,15 +36,15 @@ function grpLabel(g){ return t(g, GRP_EN[g]||g); }
 function fLabel(f){ return t(f.label, f.labelEn||f.label); }
 function fVal(f){ return t(f.val, f.valEn||f.val); }
 
-/* ---------- 狀態 ---------- */
-const dispatched=Bus.get('policy');
+/* ---------- 狀態(綁當前訂單)---------- */
+const dispatched=curOrderId()?oget('policy'):null;
 const realKeys=dispatched&&dispatched.perStage&&dispatched.perStage[STAGE.id];
 const state={
   view:'home',
-  policy: realKeys? dispatched : MOCK_POLICY,
+  policy: realKeys? dispatched : null,
   policyIsReal: !!realKeys,
-  submission: Bus.get('submission:'+STAGE.id),
-  submitted: !!Bus.get('submission:'+STAGE.id),
+  submission: curOrderId()?oget('submission:'+STAGE.id):null,
+  submitted: !!(curOrderId()&&oget('submission:'+STAGE.id)),
   preprocessed: false,
   chain:null, chainAnim:null,
 };
@@ -60,8 +69,12 @@ const NAV=[
   ['verify','驗證請求','Verify Requests','verify'],
   ['settings','設定','Settings'],
 ];
+function enterOrder(id){ location.href='factory.html?order='+encodeURIComponent(id)+'&stage='+STAGE.id; }
+function exitOrders(){ location.href='factory.html?stage='+STAGE.id; }
 function renderNav(){
   let h='';
+  if(!curOrder()){ document.getElementById('nav').innerHTML=`<a class="on">${t('訂單收件匣','Order Inbox')}</a>`; return; }
+  h+=`<a onclick="exitOrders()" style="color:var(--accent);font-family:var(--mono);font-size:12px">← ${t('訂單收件匣','Order Inbox')}</a>`;
   for(const it of NAV){
     if(it[0].startsWith('_c')){h+=`<div class="grp">${t(it[1],it[2])}</div>`;continue;}
     const [v,zh,en,badgeKind]=it;
@@ -79,7 +92,7 @@ function renderTopbar(){
   const c=state.policyIsReal;
   document.getElementById('topbar').innerHTML=`
     <span class="brand">${t(STAGE.brand,STAGE.brandEn||STAGE.brand)}</span>
-    <span class="role">· ${t('角色','Role')}:${t(STAGE.role,STAGE.roleEn||STAGE.role)} <code>${STAGE.id}</code> · ${t('訂單','Order')} ${state.policy?state.policy.order:STAGE.orderNo}</span>
+    <span class="role">· ${t('角色','Role')}:${t(STAGE.role,STAGE.roleEn||STAGE.role)} <code>${STAGE.id}</code> · ${t('訂單','Order')} ${curOrderNo()}</span>
     <span class="spacer"></span>
     ${state.policyIsReal&&!state.submitted?`<span class="chip warn">${t('待上傳','To upload')}</span>`:''}
     ${state.submitted?`<span class="chip">${t('已上傳','Uploaded')}</span>`:''}
@@ -109,11 +122,31 @@ function scHTML(){
   return `<div class="scbar">`+SC.map((s,i)=>{
     const [key,lbl,subKey,en]=s;
     let cls='';
-    if(subKey){ if(subKey===STAGE.id){ cls=state.submitted?'done':'cur'; } else if(Bus.get('submission:'+subKey)){ cls='done'; } }
+    if(subKey){ if(subKey===STAGE.id){ cls=state.submitted?'done':'cur'; } else if(oget('submission:'+subKey)){ cls='done'; } }
     else if(key==='poly'){ cls='done'; }
     const me = subKey===STAGE.id?t('(你在這)','(you)'):'';
     return `<span class="st ${cls}">${t(lbl,en)}${me}${cls==='done'?' ✓':(cls==='cur'?' ◷':'')}</span>`+(i<SC.length-1?'<span>→</span>':'');
   }).join('')+`</div>`;
+}
+
+/* ---------- 訂單收件匣(工廠主頁)---------- */
+function vFactoryInbox(){
+  const list=myOrders();
+  const cards=list.map(o=>{
+    const st=orderStageStatus(o.id);
+    const label = st==='minted'?t('已上鏈','On-chain'):(st==='submitted'?t('已上傳 · 待平台鑄造','Uploaded · awaiting mint'):t('待上傳','To upload'));
+    const cls = st==='pending'?'chip warn':'chip';
+    return `<div class="card" style="cursor:pointer" onclick="enterOrder('${o.id}')">
+      <div class="row"><span class="eyebrow">${o.no}</span><span class="right"></span><span class="${cls}">${label}</span></div>
+      <h3 style="margin:6px 0 2px">${t(o.product,o.productEn||o.product)}</h3>
+      <div class="kv">${t('買家','Buyer')} ${t(o.buyer,o.buyerEn||o.buyer)} · ${t('截止','Deadline')} ${o.deadline}</div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" onclick="event.stopPropagation();enterOrder('${o.id}')">${st==='pending'?t('前往決策','Go to decision'):t('開啟','Open')} →</button></div>
+    </div>`;
+  }).join('');
+  return `<div class="eyebrow">${t('工廠端 Endpoint','Factory Endpoint')} · ${t(STAGE.label,STAGE.labelEn||STAGE.label)}</div>
+  <h1>${t('訂單收件匣','Order Inbox')}</h1>
+  <p>${t('平台派發收集政策給本廠的訂單會列在這裡。點進某訂單完成揭露決策並上傳。','Orders whose collection policy the platform dispatched to this factory appear here. Open one to complete disclosure and upload.')}</p>
+  ${list.length?`<div class="grid2">${cards}</div>`:`<div class="callout info"><div class="t">${t('目前沒有派給本廠的訂單','No orders dispatched to this factory')}</div>${t('請在平台端對某訂單派發本站政策後再回來。','Dispatch this stage policy to an order from the platform, then come back.')}</div>`}`;
 }
 
 /* ---------- Views ---------- */
@@ -124,7 +157,7 @@ function vHome(){
         <p style="margin:6px 0 0">${t('等待平台(Kanesh)依序派發本廠的收集政策。收到後此處會亮起待辦、側欄通知燈才會點亮。','Waiting for the platform (Kanesh) to dispatch the collection policy for this factory. Once received, a task appears here and the sidebar badge lights up.')}</p></div>`
     : !state.submitted
     ? `<div class="card" style="border-left:4px solid var(--accent)">
-        <div class="row"><b>${t('1 筆收集政策待上傳','1 collection policy awaiting upload')}</b><span class="pill">${t('來自','From')} ${state.policy.issuer} · ${t('訂單','Order')} ${state.policy.order}</span>
+        <div class="row"><b>${t('1 筆收集政策待上傳','1 collection policy awaiting upload')}</b><span class="pill">${t('來自','From')} ${state.policy.issuer} · ${t('訂單','Order')} ${curOrderNo()}</span>
         <span class="right"></span><button class="btn pri" onclick="go('inbox')">${t('前往決策','Go to decision')} →</button></div>
         <p style="margin:6px 0 0">${t('截止','Deadline')} ${state.policy.deadline} · ${t('設定哪些公開、哪些加密後上傳本廠資料','choose which fields are public / encrypted, then upload this factory data')}</p></div>`
     : `<div class="card" style="border-left:4px solid var(--good)">
@@ -136,7 +169,7 @@ function vHome(){
   <h2>${t('待辦','To do')}</h2>
   ${todo}
 
-  <h2>${t('本廠在供應鏈的位置','Where this factory sits in the supply chain')}(${t('本批','Batch')} ${state.policy.order})</h2>
+  <h2>${t('本廠在供應鏈的位置','Where this factory sits in the supply chain')}(${t('本批','Batch')} ${curOrderNo()})</h2>
   ${scHTML()}
   <p class="vis">${t('只顯示本段與前後棒狀態;不揭露其他工廠身分(藏供應圖)。','Only this stage and adjacent status are shown; identities of other factories stay hidden (supply map concealed).')}</p>
 
@@ -222,7 +255,7 @@ function vPreprocess(){
   <div id="preOut">${done?preOutHTML():''}</div>`;
 }
 function preOutHTML(){
-  const o={stage:STAGE.id, order:state.policy.order};
+  const o={stage:STAGE.id, order:curOrderNo()};
   requiredFields().forEach(f=>o[f.key]= f.disclosure==='public'? fVal(f) : 'ENC('+t('加密','encrypted')+')');
   return `<h3>${t('預覽:正規化後的 canonical JSON(送出前的樣子)','Preview: normalized canonical JSON (as it will be sent)')}</h3>
   <pre class="code">${JSON.stringify(o,null,2).replace(/</g,'&lt;')}</pre>
@@ -267,7 +300,7 @@ function vChain(){
   const c=state.chain; const waiting=!c;   /* 平台尚未回填 block(由平台執行上鏈) */
   const step=state.chainAnim?state.chainAnim.step:(waiting?2:5);
   const li=(k,label)=>`<li class="${step>k?'done':(step===k?'cur':'')}"><span class="dot">${step>k?'✓':k+1}</span>${label}</li>`;
-  return `${stepper('chain')}<h1>${t('上鏈狀態','On-chain Status')} · ${t(STAGE.label,STAGE.labelEn||STAGE.label)} ${state.policy.order}</h1>
+  return `${stepper('chain')}<h1>${t('上鏈狀態','On-chain Status')} · ${t(STAGE.label,STAGE.labelEn||STAGE.label)} ${curOrderNo()}</h1>
   <ul class="timeline">
     ${li(0,t('本地簽署 / 加密 / 雜湊','Local sign / encrypt / hash'))}
     ${li(1,t('送回雲端平台','Send back to platform'))}
@@ -293,14 +326,14 @@ function vChain(){
 function vSimple(title,body){return `<h1>${title}</h1>${body}`;}
 
 /* ---------- 驗證請求 / 金鑰放行(平台向本廠申請解密加密欄位)---------- */
-function myKeyReqs(){ return (Bus.get('keyRequests')||[]).filter(r=>r.stage===STAGE.id); }
+function myKeyReqs(){ return (oget('keyRequests')||[]).filter(r=>r.stage===STAGE.id); }
 function pendingKeyReqs(){ return myKeyReqs().filter(r=>r.status==='pending'); }
 function decideKey(key,decision){
-  const reqs=Bus.get('keyRequests')||[];
+  const reqs=oget('keyRequests')||[];
   const r=reqs.find(x=>x.stage===STAGE.id && x.key===key);
   if(!r){ toast(t('找不到該請求','Request not found')); return; }
   r.status=decision; r.decidedTs=nowUTC();
-  Bus.set('keyRequests',reqs);
+  oset('keyRequests',reqs);
   toast(decision==='approved'?t('已放行:平台法規端可解密此欄位','Released: the platform regulator view can decrypt this field'):t('已拒絕:維持不可解密','Denied: stays undecryptable'));
   render();
 }
@@ -324,6 +357,7 @@ function vVerify(){
 
 function render(){
   renderTopbar(); renderNav();
+  if(!curOrder()){ document.getElementById('main').innerHTML=vFactoryInbox(); return; }
   const v=state.view;
   const map={home:vHome,inbox:vInbox,disclose:vDisclose,preprocess:vPreprocess,boundary:vBoundary,chain:vChain,verify:vVerify};
   let html;
@@ -387,11 +421,11 @@ function doSign(){
      送出時 block=null,平台上鏈後會把 block 回填到同一筆 submission。
      ============================================================ */
   const submission={stage:STAGE.id, stageLabel:STAGE.label, order:STAGE.order, factoryId:STAGE.factoryId,
-    orderNo:state.policy.order, policyId:state.policy?state.policy.id:null, ts:nowUTC(),
+    orderNo:curOrderNo(), policyId:state.policy?state.policy.id:null, ts:nowUTC(),
     fields, publicCount:pubCount(), privateCount:priCount(),
     metadataHash, signature:'0x'+simpleHash(metadataHash+STAGE.id)+'…',
     block:null};
-  Bus.set('submission:'+STAGE.id, submission);
+  oset('submission:'+STAGE.id, submission);
   state.submission=submission; state.chain=null; state.submitted=true;
   state.chainAnim={step:0};
   go('chain');
@@ -399,7 +433,7 @@ function doSign(){
   const iv=setInterval(()=>{ if(state.chainAnim&&state.chainAnim.step<2){state.chainAnim.step++; render();} else {clearInterval(iv);} },650);
 }
 
-function resetSubmission(){Bus.del('submission:'+STAGE.id); state.submitted=false; state.submission=null; state.chain=null; state.preprocessed=false; FIELDS.forEach(f=>f.disclosure=f.rec); toast(t('已重置本廠提交','This factory submission has been reset')); go('home');}
+function resetSubmission(){odel('submission:'+STAGE.id); state.submitted=false; state.submission=null; state.chain=null; state.preprocessed=false; FIELDS.forEach(f=>f.disclosure=f.rec); toast(t('已重置本廠提交','This factory submission has been reset')); go('home');}
 
 function showPolicyJson(){
   const p=state.policy;
@@ -419,8 +453,15 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='
 
 /* ---------- 跨檔事件:平台派發政策 / 重置時即時反應 ---------- */
 Bus.onChange((key,val)=>{
-  if(key==='policy'){
-    /* 平台依序派發:只有當政策內含「本廠」這一站時才點亮。其他站被派發時不打擾本廠。 */
+  if(key==='lang'){ render(); return; }
+  /* 訂單收件匣頁:訂單/索引/政策變動 → 刷新收件匣 */
+  if(!curOrderId()){ if(key==='orders' || key.indexOf('order:')===0) render(); return; }
+  /* 訂單內:只理會「當前訂單」命名空間 */
+  const pfx='order:'+curOrderId()+':';
+  if(key.indexOf(pfx)!==0) return;
+  const sub=key.slice(pfx.length);
+  /* 平台派發政策(含本站)→ 亮待辦 */
+  if(sub==='policy'){
     if(val&&val.perStage&&val.perStage[STAGE.id]){
       const wasReal=state.policyIsReal;
       state.policy=val; state.policyIsReal=true;
@@ -430,24 +471,22 @@ Bus.onChange((key,val)=>{
         render();
       }
     }
+    return;
   }
-  /* 平台上鏈後把 block 回填到本廠的 submission → 顯示 Token / hash */
-  if(key==='submission:'+STAGE.id && val && val.block){
+  /* 平台上鏈後把 block 回填 → 顯示 Token / hash */
+  if(sub==='submission:'+STAGE.id && val && val.block){
     state.submission=val; state.chain=val.block; state.submitted=true;
     toast(''+t('平台已完成上鏈','Platform minted on-chain')+' · Token #'+val.block.tokenId);
-    if(state.chainAnim){
-      const t=setInterval(()=>{state.chainAnim.step++; render(); if(state.chainAnim.step>=5){clearInterval(t); state.chainAnim=null;}},350);
-    } else { render(); }
+    if(state.chainAnim){ const iv=setInterval(()=>{state.chainAnim.step++; render(); if(state.chainAnim.step>=5){clearInterval(iv); state.chainAnim=null;}},350); } else { render(); }
+    return;
   }
-  /* 另一分頁切換語言 → 本頁同步重繪 */
-  if(key==='lang'){ render(); return; }
-  /* 平台向本廠申請解密某加密欄位 → 亮通知燈、提示去「驗證請求」放行 */
-  if(key==='keyRequests'){
+  /* 平台申請解密本廠某加密欄位 → 亮通知燈 */
+  if(sub==='keyRequests'){
     const pend=(val||[]).filter(r=>r.stage===STAGE.id && r.status==='pending').length;
     if(pend) toast(''+t('平台申請解密本廠','Platform requests decryption of')+' '+pend+' '+t('個欄位 · 請至「驗證請求」放行','field(s) · release under Verify Requests'));
-    render();
+    render(); return;
   }
-  if(key==='reset'){ Bus.del('submission:'+STAGE.id); state.submitted=false; state.submission=null; state.chain=null; state.preprocessed=false; FIELDS.forEach(f=>f.disclosure=f.rec); render(); }
+  if(sub==='reset'){ odel('submission:'+STAGE.id); state.submitted=false; state.submission=null; state.chain=null; state.preprocessed=false; FIELDS.forEach(f=>f.disclosure=f.rec); render(); }
 });
 
 render();

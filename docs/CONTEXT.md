@@ -17,6 +17,16 @@
 | `server/` | 🛰 本機 IPFS 上傳後端(`server.js` + `tests/`;原 `DPP_NFT/`) |
 | `contracts/` | 📜 Sepolia NFT 合約 `SimpleDPPNFT.sol`(被平台沿用) |
 | `docs/` | 📚 CONTEXT、計畫、README,及原 DPP_NFT 文件(`docs/dpp-nft/`) |
+| `DESIGN.md` | 🎨 設計系統(Industrial-Archival)—— 改視覺前先讀 |
+| `assets/fonts/` + `assets/css/fonts.css` | 自我托管字體(Fraunces / General Sans / JetBrains Mono,維持離線) |
+
+## 多訂單架構(2026-07 重設計)
+系統以**訂單管理**為核心,不再是單一寫死訂單。
+- **儲存命名空間**:每張訂單的資料存在 `dpp_demo:order:<id>:{policy,submission:<stage>,keyRequests,events,reset}`;訂單索引在 `dpp_demo:orders`(`[{id,no,product/En,buyer/En,retention,deadline,createdTs}]`);`lang` 維持全域。
+- **當前訂單由網址帶**:`platform.html?order=<id>`、`factory.html?order=<id>&stage=spin`。無 `?order` 時平台顯示**訂單清單**、工廠顯示**訂單收件匣**(只列有派本站政策的訂單)。
+- **平台/工廠工作流都掛在訂單底下**:平台 {政策建構器/收集進度/區塊鏈瀏覽器/DPP+QR}、工廠 {揭露決策/預處理/加密送出/上鏈狀態} 都作用在當前訂單。
+- **存取 helper**(兩檔各有一份):`orders()`/`orderById()`/`curOrderId()`/`curOrder()`/`oget()`/`oset()`/`odel()`;平台另有 `createOrder`/`deleteOrder`/`seedOrders`,工廠有 `myOrders()`(本站收件匣)。
+- 首次載入 `seedOrders()` 種一張範例訂單 #A2207。改工作流邏輯時記得資料要走 `oget/oset`(訂單命名空間),不要用裸 `Bus.get('policy')`。
 
 ## 怎麼改前端(2026-06 方案 B 重構後)
 前端已抽成「共用資產 + 單一工廠頁」,**三工廠檔已合併,不再有 awk 複製儀式**:

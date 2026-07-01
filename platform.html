@@ -68,7 +68,34 @@ const QR={ render(canvas,text,opts){ opts=opts||{}; try{
   }catch(e){ return false; } } };
 
 /* ---------- 訂單 / 階段目錄(平台對各階段「可收集特徵」的認知;含值供模擬與 DPP) ---------- */
-const ORDER={ no:'#A2207', buyer:'買家 B', buyerEn:'Buyer B', issuer:'LongAdvance 平台', issuerEn:'LongAdvance Platform', product:'有機棉針織 POLO 衫', productEn:'Organic Cotton Knit Polo', deadline:'2026-06-25' };
+/* ---------- 多訂單模型 ---------- */
+const ISSUER={ name:'LongAdvance 平台', nameEn:'LongAdvance Platform' };
+function orders(){ return Bus.get('orders')||[]; }
+function saveOrders(l){ Bus.set('orders', l); }
+function orderById(id){ return orders().find(o=>o.id===id); }
+function curOrderId(){ try{ return new URLSearchParams(location.search).get('order'); }catch(e){ return null; } }
+function curOrder(){ return orderById(curOrderId()); }
+/* 訂單命名空間的 Bus 存取(當前訂單) */
+function oget(k){ return Bus.get('order:'+curOrderId()+':'+k); }
+function oset(k,v){ Bus.set('order:'+curOrderId()+':'+k, v); }
+function odel(k){ Bus.del('order:'+curOrderId()+':'+k); }
+function orderKeys(id){ return ['policy','submission:spin','submission:weave','submission:dye','keyRequests','events','reset'].map(k=>'order:'+id+':'+k); }
+function nextOrderNo(){ let m=0; orders().forEach(o=>{const n=parseInt(String(o.no).replace(/\D/g,''),10); if(n>m)m=n;}); return '#A'+((m||2206)+1); }
+function seedOrders(){
+  if(orders().length) return;
+  saveOrders([{ id:'ord_seed_2207', no:'#A2207', product:'有機棉針織 POLO 衫', productEn:'Organic Cotton Knit Polo', buyer:'買家 B', buyerEn:'Buyer B', retention:10, deadline:'2026-06-25', createdTs:'2026-06-20' }]);
+}
+function createOrder(product, buyer){
+  const list=orders();
+  const o={ id:'ord_'+Date.now(), no:nextOrderNo(), product:product||t('未命名產品','Untitled product'), productEn:product||'Untitled product',
+    buyer:buyer||'-', buyerEn:buyer||'-', retention:10, deadline:'2026-12-31', createdTs:nowUTC() };
+  list.push(o); saveOrders(list); return o;
+}
+function deleteOrder(id){ orderKeys(id).forEach(k=>Bus.del(k)); saveOrders(orders().filter(o=>o.id!==id)); }
+/* 讀某訂單(不一定是當前)的狀態,供訂單清單卡 */
+function orderSub(oid,stage){ return Bus.get('order:'+oid+':submission:'+stage); }
+function orderMinted(oid){ return STAGES.filter(s=>{const su=orderSub(oid,s.id);return su&&su.block;}).length; }
+function orderDispatched(oid){ const p=Bus.get('order:'+oid+':policy'); return !!(p&&p.perStage&&Object.keys(p.perStage).length); }
 const SPIN_FIELDS=[
   {key:'spindleId',grp:'機台 / 製程',label:'紡紗機 ID',labelEn:'Spinning Machine ID',val:'RING-12',sensitive:false,rec:'private'},
   {key:'spinParam',grp:'機台 / 製程',label:'捻度 / 錠速',labelEn:'Twist / Spindle Speed',val:'720 T/m · 16,000 rpm',sensitive:true,rec:'private'},
@@ -119,13 +146,13 @@ function sBrand(s){ return t(s.brand, s.brandEn||s.brand); }
 
 /* ---------- 狀態 ---------- */
 const state={
-  view:'home', retention:10, audience:'consumer', unseen:0,
+  view: curOrderId()?'home':'orders', retention:10, audience:'consumer', unseen:0,
   sel:{ spin:SPIN_FIELDS.map(f=>f.key), weave:WEAVE_FIELDS.map(f=>f.key), dye:DYE_FIELDS.map(f=>f.key) },
-  policy: Bus.get('policy'),
+  policy: curOrderId()?oget('policy'):null,
   verifyResult:null,
-  events: Bus.get('events')||[],
+  events: (curOrderId()?oget('events'):null)||[],
 };
-function getSub(id){return Bus.get('submission:'+id);}
+function getSub(id){return oget('submission:'+id);}
 function subs(){return STAGES.map(s=>getSub(s.id)).filter(Boolean).sort((a,b)=>a.order-b.order);}
 /* 已鑄造(含 block)的提交,與「已上傳但待鑄造」的階段 */
 function minted(){return subs().filter(s=>s.block).sort((a,b)=>a.order-b.order);}
@@ -148,11 +175,11 @@ function buildStageMetadata(stage, sub, previousTokenId){
     return {trait_type:f.label,value:'Encrypted (demo placeholder)',visibility:'private'};
   });
   return {
-    name:`Kanesh DPP ${ORDER.no} · ${stage.label}`,
-    description:`Platform-issued Digital Product Passport for the ${stage.label} stage of order ${ORDER.no}.`,
+    name:`Kanesh DPP ${curOrder().no} · ${stage.label}`,
+    description:`Platform-issued Digital Product Passport for the ${stage.label} stage of order ${curOrder().no}.`,
     attributes,
     dpp:{
-      schema:stage.schema, order:ORDER.no, stage:stage.id,
+      schema:stage.schema, order:curOrder().no, stage:stage.id,
       previousTokenId:previousTokenId||0, factoryDid:stage.factoryDid,
       publicData, encryptedData, encryptionNotice:'DEMO_ONLY_NOT_REAL_ENCRYPTION'
     }
@@ -164,7 +191,7 @@ function computeDPPHashes(metadata, stage){
     canonicalJson,
     metadataHash:ethers.keccak256(ethers.toUtf8Bytes(canonicalJson)),
     schemaHash:ethers.keccak256(ethers.toUtf8Bytes(stage.schema)),
-    orderHash:ethers.keccak256(ethers.toUtf8Bytes(ORDER.no)),
+    orderHash:ethers.keccak256(ethers.toUtf8Bytes(curOrder().no)),
     stage:ethers.keccak256(ethers.toUtf8Bytes(stage.id))
   };
 }
@@ -207,7 +234,7 @@ async function switchToSepolia(){
     return isSepolia();
   }catch(error){ toast(walletErrorMessage(error,t('無法切換到 Sepolia,請在錢包中手動切換後重試。','Could not switch to Sepolia; switch manually in your wallet and retry.'))); return false; }
 }
-function logEvent(msg){state.events.unshift({msg, ts:nowUTC()}); state.events=state.events.slice(0,12); Bus.set('events',state.events);}
+function logEvent(msg){state.events.unshift({msg, ts:nowUTC()}); state.events=state.events.slice(0,12); oset('events',state.events);}
 
 /* ---------- 導覽 ---------- */
 const NAV=[
@@ -224,6 +251,11 @@ const NAV=[
 ];
 function renderNav(){
   let h='';
+  if(!curOrder()){
+    h=`<a class="on">${t('訂單','Orders')}</a>`;
+    document.getElementById('nav').innerHTML=h; return;
+  }
+  h+=`<a onclick="exitOrders()" style="color:var(--accent);font-family:var(--mono);font-size:12px">← ${t('所有訂單','All Orders')}</a>`;
   for(const it of NAV){
     if(it[0].startsWith('_c')){h+=`<div class="grp">${t(it[1],it[2])}</div>`;continue;}
     const [v,zh,en,badgeKind]=it;
@@ -234,10 +266,14 @@ function renderNav(){
   }
   document.getElementById('nav').innerHTML=h;
 }
+function enterOrder(id){ location.href='platform.html?order='+encodeURIComponent(id); }
+function exitOrders(){ location.href='platform.html'; }
 function renderTopbar(){
-  const n=minted().length;
-  const conn = n>=3 ? `<span class="chip">${t('三廠已鑄造','All 3 minted')}</span>`
-                    : `<span class="chip warn">${t('已鑄造','Minted')} ${n}/3</span>`;
+  const o=curOrder();
+  const n=o?minted().length:0;
+  const conn = o ? (n>=3 ? `<span class="chip">${t('三廠已鑄造','All 3 minted')}</span>`
+                         : `<span class="chip warn">${t('已鑄造','Minted')} ${n}/3</span>`) : '';
+  const roleTxt = o ? `· ${t('訂單','Order')} <code>${o.no}</code>` : `· ${t('訂單管理','Order Management')}`;
   document.getElementById('topbar').innerHTML=`
     <span class="brand" style="display:inline-flex;align-items:center;gap:9px">
       <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kanesh">
@@ -248,7 +284,7 @@ function renderTopbar(){
       </svg>
       <span>KANESH <span style="font-weight:600;color:var(--muted)">· ${t('雲端平台','Cloud Platform')}</span></span>
     </span>
-    <span class="role">· ${t('DPP 發行方','DPP Issuer')} · ${t('訂單','Order')} <code>#A2207</code></span>
+    <span class="role">· ${t('DPP 發行方','DPP Issuer')} ${roleTxt}</span>
     <span class="spacer"></span>
     ${conn}
     <span class="chip">${t('簽章金鑰就緒','Signing key ready')}</span>
@@ -271,6 +307,57 @@ function scHTML(){
   }).join('')+`</div>`;
 }
 
+/* ---------- 訂單管理(主頁)---------- */
+function vOrders(){
+  const list=orders();
+  const cards=list.map(o=>{
+    const mn=orderMinted(o.id), disp=orderDispatched(o.id);
+    let status,cls;
+    if(mn>=3){ status=t('DPP 可發行','DPP ready'); cls='chip'; }
+    else if(mn>0||disp){ status=t('進行中','In progress')+' '+mn+'/3'; cls='chip warn'; }
+    else { status=t('未開始','Not started'); cls='chip'; }
+    const bar=STAGES.map(s=>{const su=orderSub(o.id,s.id);const c=su&&su.block?'done':(su?'cur':'');return `<span class="st ${c}">${sLabel(s)}${su&&su.block?' ✓':''}</span>`}).join('<span>→</span>');
+    return `<div class="card" style="cursor:pointer" onclick="enterOrder('${o.id}')">
+      <div class="row"><span class="eyebrow">${o.no}</span><span class="right"></span><span class="${cls}">${status}</span></div>
+      <h3 style="margin:6px 0 2px">${t(o.product,o.productEn||o.product)}</h3>
+      <div class="kv">${t('買家','Buyer')} ${t(o.buyer,o.buyerEn||o.buyer)} · ${t('截止','Deadline')} ${o.deadline}</div>
+      <div class="scbar" style="margin-top:8px">${bar}</div>
+      <div class="row" style="margin-top:10px"><button class="btn pri" onclick="event.stopPropagation();enterOrder('${o.id}')">${t('開啟','Open')} →</button>
+        <button class="btn warn" onclick="event.stopPropagation();confirmDeleteOrder('${o.id}')">${t('刪除','Delete')}</button></div>
+    </div>`;
+  }).join('');
+  return `<div class="eyebrow">${t('Kanesh · DPP 發行方','Kanesh · DPP Issuer')}</div>
+  <h1>${t('訂單','Orders')}</h1>
+  <p>${t('每張訂單各自收集三廠資料、鑄造 NFT、發行 DPP。點卡片進入該訂單的工作流。','Each order collects data from the three factories, mints NFTs, and issues a DPP. Click a card to enter its workflow.')}</p>
+  <div class="row" style="margin:4px 0 14px"><button class="btn pri" onclick="openNewOrder()">＋ ${t('新增訂單','New order')}</button></div>
+  ${list.length?`<div class="grid3">${cards}</div>`:`<div class="callout info"><div class="t">${t('沒有訂單','No orders')}</div>${t('按「新增訂單」建立第一張。','Create your first with New order.')}</div>`}`;
+}
+function inputCss(){ return 'width:100%;font-family:var(--font);font-size:14px;padding:8px 10px;border:1px solid var(--lineStrong);border-radius:5px;background:var(--surface);color:var(--ink)'; }
+function openNewOrder(){
+  openModal(`<h3>${t('新增訂單','New order')}</h3>
+    <p class="vis">${t('訂單號自動產生;保存年限預設 10 年,可在政策建構器調整。','Order number is auto-generated; retention defaults to 10 years, adjustable in Policy Builder.')}</p>
+    <div class="kv" style="margin:8px 0 3px">${t('產品名稱','Product name')}</div>
+    <input id="noProduct" style="${inputCss()}" placeholder="${t('例:有機棉針織 POLO 衫','e.g. Organic Cotton Knit Polo')}">
+    <div class="kv" style="margin:10px 0 3px">${t('買家','Buyer')}</div>
+    <input id="noBuyer" style="${inputCss()}" placeholder="${t('例:買家 B','e.g. Buyer B')}">
+    <div class="row" style="margin-top:14px"><span class="right"></span><button class="btn" onclick="closeModal()">${t('取消','Cancel')}</button>
+    <button class="btn pri" onclick="doCreateOrder()">${t('建立','Create')}</button></div>`);
+  const el=document.getElementById('noProduct'); if(el) el.focus();
+}
+function doCreateOrder(){
+  const p=(document.getElementById('noProduct').value||'').trim();
+  const b=(document.getElementById('noBuyer').value||'').trim();
+  const o=createOrder(p,b); closeModal(); enterOrder(o.id);
+}
+function confirmDeleteOrder(id){
+  const o=orderById(id);
+  openModal(`<h3>${t('刪除訂單','Delete order')} ${o?o.no:''}?</h3>
+    <p>${t('會清空此訂單的政策、三廠提交、金鑰請求(無法復原)。','This clears the policy, all three factory submissions, and key requests for this order (cannot be undone).')}</p>
+    <div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">${t('取消','Cancel')}</button>
+    <button class="btn warn" onclick="doDeleteOrder('${id}')">${t('確認刪除','Confirm delete')}</button></div>`);
+}
+function doDeleteOrder(id){ Bus.set('order:'+id+':reset',{ts:Date.now()}); deleteOrder(id); closeModal(); toast(t('已刪除訂單','Order deleted')); render(); }
+
 /* ---------- Views ---------- */
 function vHome(){
   const n=minted().length, pend=pendingStages().length, dispatched=!!state.policy;
@@ -286,7 +373,7 @@ function vHome(){
       <button class="btn ${n>=3?'pri':''}" onclick="go('dpp')">${t('查看 DPP / QR','View DPP / QR')} →</button></div>
   </div>
 
-  <h2>${t('訂單','Order')} ${ORDER.no} · ${t('供應鏈位置','Supply-chain position')}</h2>
+  <h2>${t('訂單','Order')} ${curOrder().no} · ${t('供應鏈位置','Supply-chain position')}</h2>
   ${scHTML()}
   <div class="row" style="margin-top:6px">
     <button class="btn" onclick="refreshAll()">↻ ${t('重新整理收集狀態','Refresh status')}</button>
@@ -395,7 +482,7 @@ function vChainExplorer(){
   if(!ch.length) return `<h1>${t('區塊鏈瀏覽器','Blockchain Explorer')}</h1><div class="callout info"><div class="t">${t('鏈上還沒有區塊','No blocks on chain yet')}</div>${t('等工廠回傳、平台','Once factories return and the platform ')}<b>${t('鑄造 NFT','mints NFTs')}</b>${t('後即會出現區塊。',', blocks appear here.')}<div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">${t('前往收集 / 鑄造','Go to collect / mint')} →</button></div></div>`;
   const anySim=ch.some(s=>!s.block.real);
   const vr=state.verifyResult;
-  let html=`<h1>${t('區塊鏈瀏覽器 · 訂單','Blockchain Explorer · Order')} ${ORDER.no}</h1>
+  let html=`<h1>${t('區塊鏈瀏覽器 · 訂單','Blockchain Explorer · Order')} ${curOrder().no}</h1>
   <div class="row">${anySim?`<button class="btn pri" onclick="verifyChain()">${t('驗證鏈接完整性(模擬塊)','Verify chain integrity (sim blocks)')}</button>`:''}
     ${vr?`<span class="chip ${vr.ok?'':'warn'}">${vr.ok?t('鏈接完整 · 未被竄改','Chain intact · untampered'):t('鏈接異常','Chain anomaly')}</span>`:''}
     <span class="right"></span><span class="vis">${ch.length} ${t('個區塊','blocks')}</span></div>`;
@@ -436,11 +523,11 @@ function dppPreview(ch){
   const isReg=aud==='regulator';
   const audLabel=isReg?t('法規機關','Regulator'):t('消費者','Consumer');
   // QR 內含 view=對象,使不同對象產生「不同的 QR」
-  const url=`https://dpp.example/p/A2207?view=${aud}#${dh}`;
+  const url=`https://dpp.example/p/${curOrder().no.replace('#','')}?view=${aud}#${dh}`;
   /* 揭露規則(兩種對象):
      - 消費者:只看工廠選擇「公開」的欄位(明文)
      - 法規機關:可額外審閱工廠「加密上傳」的欄位(具解密權,看得到原始值) */
-  const keyReqs=Bus.get('keyRequests')||[];
+  const keyReqs=oget('keyRequests')||[];
   const keyApproved=(stg,k)=>keyReqs.some(r=>r.stage===stg&&r.key===k&&r.status==='approved');
   let body='', visTotal=0, priApproved=0;
   ch.forEach(s=>{
@@ -471,8 +558,8 @@ function dppPreview(ch){
   <div class="grid2" style="margin-top:8px;align-items:start">
     <div class="passport">
       <div class="hd"><div class="eyebrow" style="color:#A9A498">DIGITAL PRODUCT PASSPORT</div>
-        <h3>${t(ORDER.product,ORDER.productEn)}</h3>
-        <div style="opacity:.92;font-size:13px">${t('訂單','Order')} ${ORDER.no} · ${t('發行方','Issuer')} ${t(ORDER.issuer,ORDER.issuerEn)} · ${t('已上鏈三段','3 stages on-chain')}</div></div>
+        <h3>${t(curOrder().product,curOrder().productEn)}</h3>
+        <div style="opacity:.92;font-size:13px">${t('訂單','Order')} ${curOrder().no} · ${t('發行方','Issuer')} ${t(ISSUER.name,ISSUER.nameEn)} · ${t('已上鏈三段','3 stages on-chain')}</div></div>
       <div class="bd">
         ${body}
       </div>
@@ -499,7 +586,7 @@ function vKeys(){
   const ch=subs();
   const enc=[];
   ch.forEach(s=>s.fields.filter(f=>f.disclosure==='private').forEach(f=>enc.push({stage:s.stage,stageLabel:s.stageLabel,label:f.label,labelEn:f.labelEn,key:f.key,cipher:f.cipher})));
-  const reqs=Bus.get('keyRequests')||[];
+  const reqs=oget('keyRequests')||[];
   return `<h1>${t('金鑰 / 驗證請求','Keys / Verify Requests')}</h1>
   <p>${t('平台手上每個工廠的密文都「打不開」。要查驗加密欄位,必須','Every factory ciphertext held by the platform is unopenable. To audit an encrypted field you must ')}<b>${t('向該工廠申請鑰匙','request the key from that factory')}</b>${t(',由工廠在其端點放行。',', which the factory releases at its endpoint.')}</p>
   ${enc.length?`<h2>${t('鏈上的加密欄位','Encrypted fields on chain')}(${enc.length})</h2>
@@ -520,9 +607,10 @@ function vSimple(title,body){return `<h1>${title}</h1>${body}`;}
 
 function render(){
   renderTopbar(); renderNav();
+  let html;
+  if(!curOrder()){ document.getElementById('main').innerHTML=vOrders(); return; }
   const v=state.view;
   const map={home:vHome,policy:vPolicy,collect:vCollect,chain:vChainExplorer,dpp:vDPP,keys:vKeys};
-  let html;
   if(map[v]) html=map[v]();
   else if(v==='events') html=vSimple(t('事件通知','Notifications'),`<div class="card"><ul class="timeline">
     ${(state.events.length?state.events:[{msg:t('(尚無事件)','(no events)'),ts:''}]).map(e=>`<li class="done"><span class="dot">✓</span>${e.msg} <span class="vis">${e.ts}</span></li>`).join('')}
@@ -556,11 +644,11 @@ function toggleSel(stage,key){
 }
 /* 把「某一站」的選定特徵累加進政策並寫出(逐站派發,而非一次三廠) */
 function addStageToPolicy(stageId){
-  const p = state.policy || { id:'POL-A2207', order:ORDER.no, issuer:ORDER.issuer,
-    retentionYears:state.retention, deadline:ORDER.deadline, sig:'verified ✓', perStage:{} };
+  const p = state.policy || { id:'POL-'+curOrder().no.replace('#',''), order:curOrder().no, issuer:ISSUER.name,
+    retentionYears:state.retention, deadline:curOrder().deadline, sig:'verified ✓', perStage:{} };
   p.retentionYears=state.retention;
   p.perStage = Object.assign({}, p.perStage, { [stageId]: state.sel[stageId].slice() });
-  Bus.set('policy',p); state.policy=p;
+  oset('policy',p); state.policy=p;
   return p;
 }
 function dispatchPolicy(stageId){
@@ -648,7 +736,7 @@ async function mintStageToken(stageId){
     const block={ index:stage.order, stage:stage.id, label:stage.label, factoryId:stage.factoryId,
       tokenId: tokenId||'?', txHash:tx.hash, tokenURI:upload.tokenURI, cid:upload.cid, gatewayURL:upload.gatewayURL,
       metadataHash:hashes.metadataHash, prevTokenId:previousTokenId, timestamp:nowUTC(), issuer:recipient, real:true };
-    Bus.set('submission:'+stage.id, Object.assign({}, sub, { block, metadata, canonicalJson:hashes.canonicalJson }));
+    oset('submission:'+stage.id, Object.assign({}, sub, { block, metadata, canonicalJson:hashes.canonicalJson }));
     logEvent(sLabel(stage)+' → '+t('平台已鑄造 DPP NFT','platform minted DPP NFT')+' · Token #'+block.tokenId);
     p.done=true; p.tokenId=block.tokenId; renderMintModal(p);
     toast(''+sLabel(stage)+' '+t('已上鏈','on-chain')+' · Token #'+block.tokenId);
@@ -664,7 +752,7 @@ function simulateMintStage(stageId){
   const stage=stageById(stageId), sub=getSub(stageId);
   if(!sub||sub.block){ render(); return; }
   const block=mintBlock(sub);
-  Bus.set('submission:'+stage.id, Object.assign({}, sub, { block }));
+  oset('submission:'+stage.id, Object.assign({}, sub, { block }));
   logEvent(sLabel(stage)+' → '+t('(模擬)平台上鏈','(simulated) platform minted')+' · Token #'+block.tokenId);
   toast(''+t('(模擬)已為','(simulated) minted')+' '+sLabel(stage)+' · Token #'+block.tokenId);
   render();
@@ -688,28 +776,28 @@ function verifyChain(){
 }
 function setAud(a){state.audience=a;render();}
 function requestKey(stage,key){
-  const reqs=Bus.get('keyRequests')||[];
+  const reqs=oget('keyRequests')||[];
   let r=reqs.find(x=>x.stage===stage&&x.key===key);
   if(r){ r.status='pending'; r.ts=nowUTC(); delete r.decidedTs; } else { reqs.push({stage,key,from:'platform',status:'pending',ts:nowUTC()}); }
-  Bus.set('keyRequests',reqs);
+  oset('keyRequests',reqs);
   logEvent(t('向','Requested decryption key')+' '+(stageById(stage)?sLabel(stageById(stage)):stage)+' '+t('廠 申請「','for field ')+key+t('」解密鑰匙','',));
   toast(t('已送出鑰匙申請 · 需該工廠在其「驗證請求」頁放行','Key request sent · the factory must release it on its Verify Requests page'));
   render();
 }
-function refreshAll(){ state.policy=Bus.get('policy'); state.verifyResult=null; toast(t('已重新讀取收集狀態','Reloaded collection status')); render(); }
+function refreshAll(){ state.policy=oget('policy'); state.verifyResult=null; toast(t('已重新讀取收集狀態','Reloaded collection status')); render(); }
 function resetAll(){
-  openModal(`<h3>${t('重置整批 Demo?','Reset entire Demo?')}</h3><p>${t('會清空已派發政策與三廠提交','Clears the dispatched policy and all three factory submissions')}(<code>dpp_demo:*</code>)${t(',回到初始狀態。',', returning to the initial state.')}</p>
+  openModal(`<h3>${t('重置本訂單?','Reset this order?')}</h3><p>${t('會清空本訂單的政策、三廠提交與金鑰請求,回到初始狀態(不影響其他訂單)。','Clears this order policy, all three factory submissions and key requests, back to the initial state (other orders unaffected).')}</p>
     <div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">${t('取消','Cancel')}</button>
     <button class="btn warn" onclick="doReset()">${t('確認重置','Confirm reset')}</button></div>`);
 }
 function doReset(){
-  ['policy','submission:spin','submission:weave','submission:dye','keyRequests','events'].forEach(k=>Bus.del(k));
-  Bus.set('reset',{ts:Date.now()}); // 通知工廠端清掉已送狀態
+  ['policy','submission:spin','submission:weave','submission:dye','keyRequests','events'].forEach(k=>odel(k));
+  oset('reset',{ts:Date.now()}); // 通知工廠端清掉本訂單已送狀態
   state.policy=null; state.verifyResult=null; state.events=[]; state.unseen=0;
-  closeModal(); toast(t('已重置整批 Demo','Entire Demo reset')); go('home');
+  closeModal(); toast(t('已重置本訂單','Order reset')); go('home');
 }
 function showDppJson(){
-  const ch=minted(); const dpp={ order:ORDER.no, product:ORDER.product, issuer:ORDER.issuer, dppHash:dppHashOf(ch),
+  const ch=minted(); const dpp={ order:curOrder().no, product:curOrder().product, issuer:ISSUER.name, dppHash:dppHashOf(ch),
     chain:ch.map(s=>({stage:s.stage,token:s.block.tokenId,real:!!s.block.real,tokenURI:s.block.tokenURI||null,hash:s.block.hash||s.block.metadataHash,prev:s.block.prevTokenId??s.block.prevHash??null})),
     public:{} };
   ch.forEach(s=>{ dpp.public[s.stage]={}; s.fields.filter(f=>f.disclosure==='public').forEach(f=>dpp.public[s.stage][f.key]=f.val); });
@@ -728,29 +816,32 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='
 
 /* ---------- 跨檔事件:工廠上傳時即時反應 ---------- */
 Bus.onChange((key,val)=>{
-  if(key.indexOf('submission:')===0 && val){
+  if(key==='lang'){ render(); return; }
+  /* 訂單清單頁:任何訂單/索引變動都刷新 */
+  if(!curOrderId()){ if(key==='orders' || key.indexOf('order:')===0) render(); return; }
+  /* 訂單內:只理會「當前訂單」命名空間下的變動 */
+  const pfx='order:'+curOrderId()+':';
+  if(key.indexOf(pfx)!==0) return;
+  const sub=key.slice(pfx.length);
+  if(sub.indexOf('submission:')===0 && val){
     const st=stageById(val.stage);
     if(!val.block){
       /* === BLOCKCHAIN INTEGRATION POINT ===
-         工廠剛回傳原始提交(尚未上鏈)。平台「不」自動上鏈,而是在收集進度顯示
-         「Mint NFT」按鈕,由平台操作員手動鑄造(真實上鏈或模擬上鏈)。 */
+         工廠剛回傳原始提交(尚未上鏈)。平台不自動上鏈,而在收集進度顯示
+         「Mint NFT」按鈕,由操作員手動鑄造(真實或模擬)。 */
       logEvent((st?sLabel(st):val.stage)+' '+t('已上傳 · 待平台鑄造 NFT','uploaded · awaiting platform mint'));
       toast(''+t('收到','Received')+' '+(st?sLabel(st):val.stage)+' '+t('提交 · 請至收集進度鑄造 NFT','submission · go to Collection to mint'));
       if(state.view!=='collect' && state.view!=='policy') state.unseen++;
-      render();
-      return;
+      render(); return;
     }
-    /* 已含 block(例如模擬上鏈於另一分頁完成) */
     if(state.view!=='collect') state.unseen++;
     logEvent((st?sLabel(st):val.stage)+' '+t('已上鏈','on-chain')+' · Token #'+val.block.tokenId);
-    render();
+    render(); return;
   }
-  /* 工廠在其「驗證請求」頁放行/拒絕了解密鑰匙 → 反映到金鑰頁與法規視角 */
-  if(key==='keyRequests'){ toast(t('工廠已更新驗證請求放行狀態','Factory updated verify-request status')); render(); }
-  /* 另一分頁切換語言 → 本頁同步重繪 */
-  if(key==='lang'){ render(); }
+  if(sub==='keyRequests'){ toast(t('工廠已更新驗證請求放行狀態','Factory updated verify-request status')); render(); }
 });
 
+seedOrders();
 render();
 </script>
 </body>
