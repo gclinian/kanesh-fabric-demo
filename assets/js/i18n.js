@@ -28,7 +28,7 @@
   };
   /* 放進 topbar 的切換鈕 HTML;顯示目前語言,點擊切換。 */
   window.langChipHTML = function () {
-    return '<span class="chip" style="cursor:pointer" onclick="toggleLang()" title="中文 / English">🌐 '
+    return '<span class="chip" style="cursor:pointer" onclick="toggleLang()" title="中文 / English">'
       + (getLang() === 'en' ? 'EN' : '中') + '</span>';
   };
 

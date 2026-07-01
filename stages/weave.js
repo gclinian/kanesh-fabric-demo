@@ -4,7 +4,7 @@ window.STAGE = {
   id:'weave', factoryId:'F-WEAVE', order:1, prev:'spin',
   label:'織布', role:'織布 weave',
   labelEn:'Weaving', roleEn:'Weaving (weave)',
-  brand:'🧶 Harmony 織布廠', brandEn:'🧶 Harmony Weaving Mill',
+  brand:'Harmony 織布廠', brandEn:'Harmony Weaving Mill',
   titleZh:'織布廠 Endpoint · 互動原型', titleEn:'Weaving Mill Endpoint · Prototype',
   color:'#9333ea',
   orderNo:'#A2207',

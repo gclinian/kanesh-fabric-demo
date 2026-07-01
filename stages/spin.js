@@ -4,7 +4,7 @@ window.STAGE = {
   id:'spin', factoryId:'F-SPIN', order:0, prev:null,
   label:'紡紗', role:'紡紗 spin',
   labelEn:'Spinning', roleEn:'Spinning (spin)',
-  brand:'🧵 Prosperity 紡紗廠', brandEn:'🧵 Prosperity Spinning Mill',
+  brand:'Prosperity 紡紗廠', brandEn:'Prosperity Spinning Mill',
   titleZh:'紡紗廠 Endpoint · 互動原型', titleEn:'Spinning Mill Endpoint · Prototype',
   color:'#0d9488',           // 角色色(頂欄上緣)
   orderNo:'#A2207',

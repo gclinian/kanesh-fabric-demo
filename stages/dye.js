@@ -4,7 +4,7 @@ window.STAGE = {
   id:'dye', factoryId:'F-DYE', order:2, prev:'weave',
   label:'染整', role:'染整 dye-fnsh',
   labelEn:'Dyeing', roleEn:'Dyeing (dye-fnsh)',
-  brand:'🏭 Evergreen 染整廠', brandEn:'🏭 Evergreen Dyeing Mill',
+  brand:'Evergreen 染整廠', brandEn:'Evergreen Dyeing Mill',
   titleZh:'染整廠 Endpoint · 互動原型', titleEn:'Dyeing Mill Endpoint · Prototype',
   color:'#4338ca',
   orderNo:'#A2207',
