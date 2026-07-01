@@ -361,9 +361,17 @@ function doDeleteOrder(id){ Bus.set('order:'+id+':reset',{ts:Date.now()}); delet
 /* ---------- Views ---------- */
 function vHome(){
   const n=minted().length, pend=pendingStages().length, dispatched=!!state.policy;
-  const stMark=s=>{const su=getSub(s.id); return (su?(su.block?'':''):'')+sLabel(s);};
-  return `<div class="eyebrow">${t('雲端平台 · DPP 發行方','Cloud Platform · DPP Issuer')}</div><h1>${t('總覽 Dashboard','Dashboard')}</h1>
-  <p>${t('挑選要收集的特徵 → 派發給工廠 → 工廠回傳 → 平台','Pick features to collect → dispatch to factories → factories return → the platform ')}<b>${t('鑄造 NFT','mints NFTs')}</b> ${t('→ 用明文彙整成 DPP 與 QR。','→ compiling public data into the DPP and QR.')}</p>
+  const o=curOrder();
+  const stMark=s=>sLabel(s);
+  return `<div class="eyebrow">${t('雲端平台 · DPP 發行方 · 總覽','Cloud Platform · DPP Issuer · Overview')}</div>
+  <h1>${t('訂單','Order')} ${o.no}</h1>
+  <p style="margin:2px 0 16px">${t(o.product,o.productEn||o.product)} · ${t('買家','Buyer')} ${t(o.buyer,o.buyerEn||o.buyer)} · ${t('截止','Deadline')} ${o.deadline}</p>
+
+  <div class="card" style="margin:0 0 18px">
+    <div class="row" style="margin-bottom:6px"><b>${t('供應鏈位置','Supply-chain position')}</b><span class="right"></span><span class="vis">${t('已鑄造','Minted')} ${n}/3</span></div>
+    ${scHTML()}
+  </div>
+
   <div class="grid3">
     <div class="card"><b>① ${t('收集政策','Collection policy')}</b><p>${dispatched?`${t('已派發','Dispatched')} <code>${state.policy.id}</code><br>${t('保存','Retention')} ${state.policy.retentionYears} ${t('年','yr')}`:`${t('尚未派發','Not dispatched')}`}</p>
       <button class="btn ${dispatched?'':'pri'}" onclick="go('policy')">${dispatched?t('調整 / 重派','Adjust / redispatch'):t('前往派發','Go to dispatch')} →</button></div>
@@ -373,12 +381,10 @@ function vHome(){
       <button class="btn ${n>=3?'pri':''}" onclick="go('dpp')">${t('查看 DPP / QR','View DPP / QR')} →</button></div>
   </div>
 
-  <h2>${t('訂單','Order')} ${curOrder().no} · ${t('供應鏈位置','Supply-chain position')}</h2>
-  ${scHTML()}
-  <div class="row" style="margin-top:6px">
+  <div class="row" style="margin-top:14px">
     <button class="btn" onclick="refreshAll()">↻ ${t('重新整理收集狀態','Refresh status')}</button>
     <span class="right"></span>
-    <button class="btn warn" onclick="resetAll()">${t('重置整批 Demo','Reset entire Demo')}</button>
+    <button class="btn warn" onclick="resetAll()">${t('重置本訂單','Reset this order')}</button>
   </div>`;
 }
 
