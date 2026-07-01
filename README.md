@@ -83,6 +83,7 @@ docs/                    交接脈絡 CONTEXT.md、實作計畫、舊版說明
 - 佈局 → `assets/css/base.css`;元件外觀 → `assets/css/components.css`
 - 三廠共用邏輯 → `assets/js/factory-app.js`
 - 各站欄位 / 站別色 → `stages/<id>.js`
+- 中英切換 → topbar 的 **🌐 中/EN** 鈕(`assets/js/i18n.js`)。語言存 `dpp_demo:lang`、平台與工廠共用並跨分頁同步。新字串用 `${t('中文','English')}` 包起來即可雙語;欄位英文放 `stages/*.js` 的 `labelEn`。
 
 `npm run serve` 是**不快取的 dev server**(`scripts/dev-server.py`),改完存檔後**一般重新整理**就會看到最新版,不必硬重新整理。
 

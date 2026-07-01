@@ -19,6 +19,9 @@
 
 <div id="modal" class="mask hidden"><div class="modal" id="modalBody"></div></div>
 
+<!-- i18n 先載(定義全域 t/getLang/toggleLang,factory-app.js 會用到) -->
+<script src="assets/js/i18n.js"></script>
+
 <!-- 三廠合一:用 ?stage=spin|weave|dye 決定載入哪一站設定。
      先載 stages/<id>.js(設定 window.STAGE / window.FIELDS),
      再載三廠共用的 factory-app.js(載入後自行 render())。 -->

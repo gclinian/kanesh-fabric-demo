@@ -10,22 +10,7 @@
 </head>
 <body>
 
-<div class="topbar">
-  <span class="brand" style="display:inline-flex;align-items:center;gap:9px">
-    <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kanesh">
-      <rect width="32" height="32" rx="8" fill="url(#kaneshG)"/>
-      <path d="M11 7v18M11 16l8.5-9M11 16l8.5 9" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <defs><linearGradient id="kaneshG" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#1d4ed8"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
-    </svg>
-    <span>KANESH <span style="font-weight:600;color:var(--muted)">· 雲端平台</span></span>
-  </span>
-  <span class="role">· DPP 發行方 · 訂單 <code>#A2207</code></span>
-  <span class="spacer"></span>
-  <span class="chip" id="connChip">🛰 收集中</span>
-  <span class="chip">🔏 簽章金鑰就緒</span>
-  <span class="chip demo">原型 Demo</span>
-</div>
+<div class="topbar" id="topbar"></div>
 
 <div class="layout">
   <aside class="side"><nav class="nav" id="nav"></nav></aside>
@@ -46,6 +31,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 <!-- ethers v6(真實上鏈用;離線時僅影響「真實 Mint」,模擬上鏈不受影響) -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+<script src="assets/js/i18n.js"></script>
 
 <script>
 /* ===================== EVM / NFT 設定(沿用 DPP_NFT 的 Sepolia 部署) ===================== */
@@ -81,47 +67,54 @@ const QR={ render(canvas,text,opts){ opts=opts||{}; try{
   }catch(e){ return false; } } };
 
 /* ---------- 訂單 / 階段目錄(平台對各階段「可收集特徵」的認知;含值供模擬與 DPP) ---------- */
-const ORDER={ no:'#A2207', buyer:'買家 B', issuer:'LongAdvance 平台', product:'有機棉針織 POLO 衫', deadline:'2026-06-25' };
+const ORDER={ no:'#A2207', buyer:'買家 B', buyerEn:'Buyer B', issuer:'LongAdvance 平台', issuerEn:'LongAdvance Platform', product:'有機棉針織 POLO 衫', productEn:'Organic Cotton Knit Polo', deadline:'2026-06-25' };
 const SPIN_FIELDS=[
-  {key:'spindleId',grp:'機台 / 製程',label:'紡紗機 ID',val:'RING-12',sensitive:false,rec:'private'},
-  {key:'spinParam',grp:'機台 / 製程',label:'捻度 / 錠速',val:'720 T/m · 16,000 rpm',sensitive:true,rec:'private'},
-  {key:'yarnCount',grp:'批次 / 料號',label:'紗支號數 yarn count',val:'Ne 40/1',sensitive:false,rec:'public'},
-  {key:'blend',grp:'批次 / 料號',label:'混紡比 blend',val:'精梳棉 100%',sensitive:false,rec:'public'},
-  {key:'evenness',grp:'測試 / 品質',label:'條乾 CV%',val:'12.4 %',sensitive:false,rec:'public'},
-  {key:'tenacity',grp:'測試 / 品質',label:'強力 tenacity',val:'18.6 cN/tex',sensitive:false,rec:'public'},
-  {key:'hairiness',grp:'測試 / 品質',label:'毛羽 hairiness (H)',val:'4.2',sensitive:false,rec:'public'},
-  {key:'yarnReport',grp:'文件',label:'紗線測試報告.pdf',val:'hash 71a0…',sensitive:false,rec:'public'},
-  {key:'ocsCert',grp:'文件',label:'OCS 有機棉證明.pdf',val:'hash c4e2…',sensitive:true,rec:'private'},
+  {key:'spindleId',grp:'機台 / 製程',label:'紡紗機 ID',labelEn:'Spinning Machine ID',val:'RING-12',sensitive:false,rec:'private'},
+  {key:'spinParam',grp:'機台 / 製程',label:'捻度 / 錠速',labelEn:'Twist / Spindle Speed',val:'720 T/m · 16,000 rpm',sensitive:true,rec:'private'},
+  {key:'yarnCount',grp:'批次 / 料號',label:'紗支號數 yarn count',labelEn:'Yarn Count',val:'Ne 40/1',sensitive:false,rec:'public'},
+  {key:'blend',grp:'批次 / 料號',label:'混紡比 blend',labelEn:'Blend Ratio',val:'精梳棉 100%',valEn:'Combed cotton 100%',sensitive:false,rec:'public'},
+  {key:'evenness',grp:'測試 / 品質',label:'條乾 CV%',labelEn:'Evenness CV%',val:'12.4 %',sensitive:false,rec:'public'},
+  {key:'tenacity',grp:'測試 / 品質',label:'強力 tenacity',labelEn:'Tenacity',val:'18.6 cN/tex',sensitive:false,rec:'public'},
+  {key:'hairiness',grp:'測試 / 品質',label:'毛羽 hairiness (H)',labelEn:'Hairiness (H)',val:'4.2',sensitive:false,rec:'public'},
+  {key:'yarnReport',grp:'文件',label:'紗線測試報告.pdf',labelEn:'Yarn Test Report.pdf',val:'hash 71a0…',sensitive:false,rec:'public'},
+  {key:'ocsCert',grp:'文件',label:'OCS 有機棉證明.pdf',labelEn:'OCS Organic Cotton Cert.pdf',val:'hash c4e2…',sensitive:true,rec:'private'},
 ];
 const WEAVE_FIELDS=[
-  {key:'loomId',grp:'機台 / 製程',label:'織機 ID',val:'AJL-23',sensitive:false,rec:'private'},
-  {key:'weaveParam',grp:'機台 / 製程',label:'上機參數 經/緯密 · 車速',val:'128×72 根/吋 · 650 rpm',sensitive:true,rec:'private'},
-  {key:'greigeBatch',grp:'批次 / 料號',label:'胚布批號 greige',val:'G-2207-08',sensitive:false,rec:'public'},
-  {key:'structure',grp:'批次 / 料號',label:'組織 structure',val:'平紋 plain',sensitive:false,rec:'public'},
-  {key:'width',grp:'規格',label:'幅寬 width',val:'58 inch',sensitive:false,rec:'public'},
-  {key:'gsm',grp:'規格',label:'克重 GSM',val:'145 g/m²',sensitive:false,rec:'public'},
-  {key:'density',grp:'測試 / 品質',label:'經緯密度 density',val:'128 × 72',sensitive:false,rec:'public'},
-  {key:'strength',grp:'測試 / 品質',label:'撕裂強度 tear',val:'1,820 g',sensitive:false,rec:'public'},
-  {key:'defectRate',grp:'測試 / 品質',label:'疵點率 defect',val:'2.1 %',sensitive:false,rec:'public'},
-  {key:'greigeReport',grp:'文件',label:'胚布檢驗報告.pdf',val:'hash 5b9d…',sensitive:false,rec:'public'},
+  {key:'loomId',grp:'機台 / 製程',label:'織機 ID',labelEn:'Loom ID',val:'AJL-23',sensitive:false,rec:'private'},
+  {key:'weaveParam',grp:'機台 / 製程',label:'上機參數 經/緯密 · 車速',labelEn:'Setup: Warp/Weft Density · Speed',val:'128×72 根/吋 · 650 rpm',valEn:'128×72 /inch · 650 rpm',sensitive:true,rec:'private'},
+  {key:'greigeBatch',grp:'批次 / 料號',label:'胚布批號 greige',labelEn:'Greige Batch No.',val:'G-2207-08',sensitive:false,rec:'public'},
+  {key:'structure',grp:'批次 / 料號',label:'組織 structure',labelEn:'Structure',val:'平紋 plain',valEn:'Plain',sensitive:false,rec:'public'},
+  {key:'width',grp:'規格',label:'幅寬 width',labelEn:'Width',val:'58 inch',sensitive:false,rec:'public'},
+  {key:'gsm',grp:'規格',label:'克重 GSM',labelEn:'GSM (Weight)',val:'145 g/m²',sensitive:false,rec:'public'},
+  {key:'density',grp:'測試 / 品質',label:'經緯密度 density',labelEn:'Thread Density',val:'128 × 72',sensitive:false,rec:'public'},
+  {key:'strength',grp:'測試 / 品質',label:'撕裂強度 tear',labelEn:'Tear Strength',val:'1,820 g',sensitive:false,rec:'public'},
+  {key:'defectRate',grp:'測試 / 品質',label:'疵點率 defect',labelEn:'Defect Rate',val:'2.1 %',sensitive:false,rec:'public'},
+  {key:'greigeReport',grp:'文件',label:'胚布檢驗報告.pdf',labelEn:'Greige Inspection Report.pdf',val:'hash 5b9d…',sensitive:false,rec:'public'},
 ];
 const DYE_FIELDS=[
-  {key:'machineId',grp:'機台 / 製程',label:'染色機 ID',val:'DYE-07',sensitive:false,rec:'private'},
-  {key:'stenterParam',grp:'機台 / 製程',label:'定型溫度 / 車速',val:'195°C / 22 m·min',sensitive:true,rec:'private'},
-  {key:'batch',grp:'批次 / 料號',label:'染色批號 batch',val:'B-2207-13',sensitive:false,rec:'public'},
-  {key:'recipe',grp:'批次 / 料號',label:'染料配方 recipe',val:'CI Acid Blue 25 · 2.1%owf …',sensitive:true,rec:'private'},
-  {key:'deltaE',grp:'測試 / 品質',label:'色差 ΔE',val:'0.82',sensitive:false,rec:'public'},
-  {key:'fastness',grp:'測試 / 品質',label:'堅牢度 fastness (ISO 105)',val:'摩擦 4-5 級',sensitive:false,rec:'public'},
-  {key:'cod',grp:'測試 / 品質',label:'廢水 COD',val:'180 mg/L',sensitive:false,rec:'public'},
-  {key:'testReport',grp:'文件',label:'測試報告.pdf',val:'hash 3af9…',sensitive:false,rec:'public'},
-  {key:'grsCert',grp:'文件',label:'GRS 交易證明.pdf',val:'hash b1c7…',sensitive:true,rec:'private'},
+  {key:'machineId',grp:'機台 / 製程',label:'染色機 ID',labelEn:'Dyeing Machine ID',val:'DYE-07',sensitive:false,rec:'private'},
+  {key:'stenterParam',grp:'機台 / 製程',label:'定型溫度 / 車速',labelEn:'Setting Temp / Speed',val:'195°C / 22 m·min',sensitive:true,rec:'private'},
+  {key:'batch',grp:'批次 / 料號',label:'染色批號 batch',labelEn:'Dye Batch No.',val:'B-2207-13',sensitive:false,rec:'public'},
+  {key:'recipe',grp:'批次 / 料號',label:'染料配方 recipe',labelEn:'Dye Recipe',val:'CI Acid Blue 25 · 2.1%owf …',sensitive:true,rec:'private'},
+  {key:'deltaE',grp:'測試 / 品質',label:'色差 ΔE',labelEn:'Color Diff ΔE',val:'0.82',sensitive:false,rec:'public'},
+  {key:'fastness',grp:'測試 / 品質',label:'堅牢度 fastness (ISO 105)',labelEn:'Fastness (ISO 105)',val:'摩擦 4-5 級',valEn:'Rubbing grade 4-5',sensitive:false,rec:'public'},
+  {key:'cod',grp:'測試 / 品質',label:'廢水 COD',labelEn:'Wastewater COD',val:'180 mg/L',sensitive:false,rec:'public'},
+  {key:'testReport',grp:'文件',label:'測試報告.pdf',labelEn:'Test Report.pdf',val:'hash 3af9…',sensitive:false,rec:'public'},
+  {key:'grsCert',grp:'文件',label:'GRS 交易證明.pdf',labelEn:'GRS Transaction Cert.pdf',val:'hash b1c7…',sensitive:true,rec:'private'},
 ];
 const STAGES=[
-  {id:'spin', label:'紡紗', brand:'🧵 Prosperity 紡紗廠', factoryId:'F-SPIN', order:0, prev:null,   fields:SPIN_FIELDS, schema:'dpp-spin-v1',  factoryDid:'did:web:spin-factory.example'},
-  {id:'weave',label:'織布', brand:'🧶 Harmony 織布廠',    factoryId:'F-WEAVE',order:1, prev:'spin', fields:WEAVE_FIELDS,schema:'dpp-weave-v1', factoryDid:'did:web:weave-factory.example'},
-  {id:'dye',  label:'染整', brand:'🏭 Evergreen 染整廠',  factoryId:'F-DYE',  order:2, prev:'weave',fields:DYE_FIELDS,  schema:'dpp-dye-v1',   factoryDid:'did:web:dye-factory.example'},
+  {id:'spin', label:'紡紗', labelEn:'Spinning', brand:'🧵 Prosperity 紡紗廠', brandEn:'🧵 Prosperity Spinning Mill', factoryId:'F-SPIN', order:0, prev:null,   fields:SPIN_FIELDS, schema:'dpp-spin-v1',  factoryDid:'did:web:spin-factory.example'},
+  {id:'weave',label:'織布', labelEn:'Weaving', brand:'🧶 Harmony 織布廠',    brandEn:'🧶 Harmony Weaving Mill', factoryId:'F-WEAVE',order:1, prev:'spin', fields:WEAVE_FIELDS,schema:'dpp-weave-v1', factoryDid:'did:web:weave-factory.example'},
+  {id:'dye',  label:'染整', labelEn:'Dyeing', brand:'🏭 Evergreen 染整廠',  brandEn:'🏭 Evergreen Dyeing Mill', factoryId:'F-DYE',  order:2, prev:'weave',fields:DYE_FIELDS,  schema:'dpp-dye-v1',   factoryDid:'did:web:dye-factory.example'},
 ];
 const stageById=id=>STAGES.find(s=>s.id===id);
+/* i18n 顯示 helper(on-chain metadata 不受語言影響,見 buildStageMetadata) */
+const GRP_EN={'機台 / 製程':'Machine / Process','批次 / 料號':'Batch / SKU','測試 / 品質':'Testing / Quality','文件':'Documents','規格':'Specs'};
+function grpLabel(g){ return t(g, GRP_EN[g]||g); }
+function fLabel(f){ return t(f.label, f.labelEn||f.label); }
+function fVal(f){ return t(f.val, f.valEn||f.val); }
+function sLabel(s){ return t(s.label, s.labelEn||s.label); }
+function sBrand(s){ return t(s.brand, s.brandEn||s.brand); }
 
 /* ---------- 狀態 ---------- */
 const state={
@@ -195,14 +188,14 @@ function walletErrorMessage(error, fallback){
   return m?`${fallback}(${m})`:fallback;
 }
 async function connectWallet(){
-  if(!window.ethereum){ const m='找不到 EVM 瀏覽器錢包。請安裝或啟用 MetaMask / OKX Wallet 後重試。'; alert(m); toast(m); return null; }
+  if(!window.ethereum){ const m=t('找不到 EVM 瀏覽器錢包。請安裝或啟用 MetaMask / OKX Wallet 後重試。','No EVM browser wallet found. Install or enable MetaMask / OKX Wallet and retry.'); alert(m); toast(m); return null; }
   try{
     const accounts=await window.ethereum.request({method:'eth_requestAccounts'});
     walletState.account=accounts?.[0]||null;
     const cid=await window.ethereum.request({method:'eth_chainId'});
     walletState.chainId=parseInt(cid,16);
     return walletState.account;
-  }catch(error){ toast(walletErrorMessage(error,'錢包連線失敗。')); return null; }
+  }catch(error){ toast(walletErrorMessage(error,t('錢包連線失敗。','Wallet connection failed.'))); return null; }
 }
 async function switchToSepolia(){
   if(!window.ethereum) return false;
@@ -211,76 +204,93 @@ async function switchToSepolia(){
     const cid=await window.ethereum.request({method:'eth_chainId'});
     walletState.chainId=parseInt(cid,16);
     return isSepolia();
-  }catch(error){ toast(walletErrorMessage(error,'無法切換到 Sepolia,請在錢包中手動切換後重試。')); return false; }
+  }catch(error){ toast(walletErrorMessage(error,t('無法切換到 Sepolia,請在錢包中手動切換後重試。','Could not switch to Sepolia; switch manually in your wallet and retry.'))); return false; }
 }
 function logEvent(msg){state.events.unshift({msg, ts:nowUTC()}); state.events=state.events.slice(0,12); Bus.set('events',state.events);}
 
 /* ---------- 導覽 ---------- */
 const NAV=[
-  ['_c1','發行流程'],
-  ['home','▣ 總覽 Dashboard'],
-  ['policy','📋 政策建構器'],
-  ['collect','🛰 收集進度','collect'],
-  ['chain','⛓ 區塊鏈瀏覽器'],
-  ['dpp','🎫 DPP 與 QR'],
-  ['_c2','管理'],
-  ['keys','🔑 金鑰 / 驗證請求'],
-  ['events','🔔 事件通知'],
-  ['settings','⚙ 設定'],
+  ['_c1','發行流程','Issuance'],
+  ['home','▣ 總覽 Dashboard','▣ Dashboard'],
+  ['policy','📋 政策建構器','📋 Policy Builder'],
+  ['collect','🛰 收集進度','🛰 Collection','collect'],
+  ['chain','⛓ 區塊鏈瀏覽器','⛓ Blockchain Explorer'],
+  ['dpp','🎫 DPP 與 QR','🎫 DPP & QR'],
+  ['_c2','管理','Manage'],
+  ['keys','🔑 金鑰 / 驗證請求','🔑 Keys / Verify Requests'],
+  ['events','🔔 事件通知','🔔 Notifications'],
+  ['settings','⚙ 設定','⚙ Settings'],
 ];
 function renderNav(){
   let h='';
   for(const it of NAV){
-    if(it[0].startsWith('_c')){h+=`<div class="grp">${it[1]}</div>`;continue;}
-    const [v,label,badgeKind]=it;
+    if(it[0].startsWith('_c')){h+=`<div class="grp">${t(it[1],it[2])}</div>`;continue;}
+    const [v,zh,en,badgeKind]=it;
+    const label=t(zh,en);
     let badge='';
     if(badgeKind==='collect' && state.unseen>0) badge=`<span class="b">${state.unseen}</span>`;
     h+=`<a class="${state.view===v?'on':''}" onclick="go('${v}')">${label}${badge}</a>`;
   }
   document.getElementById('nav').innerHTML=h;
 }
-function renderConn(){
+function renderTopbar(){
   const n=minted().length;
-  const chip=document.getElementById('connChip');
-  if(n>=3) chip.outerHTML='<span class="chip" id="connChip">✅ 三廠已鑄造</span>';
-  else chip.outerHTML=`<span class="chip warn" id="connChip">🛰 已鑄造 ${n}/3</span>`;
+  const conn = n>=3 ? `<span class="chip">${t('✅ 三廠已鑄造','✅ All 3 minted')}</span>`
+                    : `<span class="chip warn">🛰 ${t('已鑄造','Minted')} ${n}/3</span>`;
+  document.getElementById('topbar').innerHTML=`
+    <span class="brand" style="display:inline-flex;align-items:center;gap:9px">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kanesh">
+        <rect width="32" height="32" rx="8" fill="url(#kaneshG)"/>
+        <path d="M11 7v18M11 16l8.5-9M11 16l8.5 9" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="kaneshG" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1d4ed8"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+      </svg>
+      <span>KANESH <span style="font-weight:600;color:var(--muted)">· ${t('雲端平台','Cloud Platform')}</span></span>
+    </span>
+    <span class="role">· ${t('DPP 發行方','DPP Issuer')} · ${t('訂單','Order')} <code>#A2207</code></span>
+    <span class="spacer"></span>
+    ${conn}
+    <span class="chip">🔏 ${t('簽章金鑰就緒','Signing key ready')}</span>
+    <span class="chip demo">${t('原型 Demo','Prototype Demo')}</span>
+    ${langChipHTML()}`;
+  document.title=t('雲端平台 · DPP 發行 · 互動原型','Cloud Platform · DPP Issuer · Prototype');
 }
 function go(v){ if(v==='collect') state.unseen=0; state.view=v; render(); window.scrollTo(0,0); }
 
 /* ---------- 供應鏈狀態列 ---------- */
-const SC=[['poly','聚酯',null],['spin','紡紗','spin'],['weave','織布','weave'],['dye','染整','dye'],['cmt','成衣',null],['DPP','護照','DPP']];
+const SC=[['poly','聚酯',null,'Polyester'],['spin','紡紗','spin','Spinning'],['weave','織布','weave','Weaving'],['dye','染整','dye','Dyeing'],['cmt','成衣',null,'Garment'],['DPP','護照','DPP','Passport']];
 function scHTML(){
   const have=minted().length;
   return `<div class="scbar">`+SC.map((s,i)=>{
-    const [k,lbl,sk]=s; let cls='';
+    const [k,lbl,sk,en]=s; let cls='';
     if(sk==='DPP'){ cls=have>=3?'cur':''; }
     else if(sk){ const su=getSub(sk); if(su&&su.block)cls='done'; }
     else if(k==='poly'){cls='done';}
-    return `<span class="st ${cls}">${lbl}${cls==='done'?' ✓':''}</span>`+(i<SC.length-1?'<span>→</span>':'');
+    return `<span class="st ${cls}">${t(lbl,en)}${cls==='done'?' ✓':''}</span>`+(i<SC.length-1?'<span>→</span>':'');
   }).join('')+`</div>`;
 }
 
 /* ---------- Views ---------- */
 function vHome(){
   const n=minted().length, pend=pendingStages().length, dispatched=!!state.policy;
-  const stMark=s=>{const su=getSub(s.id); return (su?(su.block?'🟢':'🟡'):'⚪')+s.label;};
-  return `<div class="eyebrow">雲端平台 · DPP 發行方</div><h1>總覽 Dashboard</h1>
-  <p>挑選要收集的特徵 → 派發給工廠 → 工廠回傳 → 平台<b>鑄造 NFT</b> → 用明文彙整成 DPP 與 QR。</p>
+  const stMark=s=>{const su=getSub(s.id); return (su?(su.block?'🟢':'🟡'):'⚪')+sLabel(s);};
+  return `<div class="eyebrow">${t('雲端平台 · DPP 發行方','Cloud Platform · DPP Issuer')}</div><h1>${t('總覽 Dashboard','Dashboard')}</h1>
+  <p>${t('挑選要收集的特徵 → 派發給工廠 → 工廠回傳 → 平台','Pick features to collect → dispatch to factories → factories return → the platform ')}<b>${t('鑄造 NFT','mints NFTs')}</b> ${t('→ 用明文彙整成 DPP 與 QR。','→ compiling public data into the DPP and QR.')}</p>
   <div class="grid3">
-    <div class="card"><b>① 收集政策</b><p>${dispatched?`🟢 已派發 <code>${state.policy.id}</code><br>保存 ${state.policy.retentionYears} 年`:'⚪ 尚未派發'}</p>
-      <button class="btn ${dispatched?'':'pri'}" onclick="go('policy')">${dispatched?'調整 / 重派 →':'前往派發 →'}</button></div>
-    <div class="card"><b>② 鑄造進度</b><p>已鑄造 <b style="font-size:18px">${n}/3</b> 廠${pend?` · <span style="color:var(--warn)">${pend} 筆待鑄造</span>`:''}<br><span class="vis">${STAGES.map(stMark).join(' · ')}</span></p>
-      <button class="btn ${pend?'pri':''}" onclick="go('collect')">查看進度 / 鑄造 →</button></div>
-    <div class="card"><b>③ DPP 護照</b><p>${n>=3?'🟢 三廠已鑄造,可發行':(n>0?'🟡 鑄造中('+n+'/3)':'⚪ 等待提交')}</p>
-      <button class="btn ${n>=3?'pri':''}" onclick="go('dpp')">查看 DPP / QR →</button></div>
+    <div class="card"><b>① ${t('收集政策','Collection policy')}</b><p>${dispatched?`🟢 ${t('已派發','Dispatched')} <code>${state.policy.id}</code><br>${t('保存','Retention')} ${state.policy.retentionYears} ${t('年','yr')}`:`⚪ ${t('尚未派發','Not dispatched')}`}</p>
+      <button class="btn ${dispatched?'':'pri'}" onclick="go('policy')">${dispatched?t('調整 / 重派','Adjust / redispatch'):t('前往派發','Go to dispatch')} →</button></div>
+    <div class="card"><b>② ${t('鑄造進度','Minting progress')}</b><p>${t('已鑄造','Minted')} <b style="font-size:18px">${n}/3</b>${pend?` · <span style="color:var(--warn)">${pend} ${t('筆待鑄造','pending')}</span>`:''}<br><span class="vis">${STAGES.map(stMark).join(' · ')}</span></p>
+      <button class="btn ${pend?'pri':''}" onclick="go('collect')">${t('查看進度 / 鑄造','View / mint')} →</button></div>
+    <div class="card"><b>③ ${t('DPP 護照','DPP Passport')}</b><p>${n>=3?t('🟢 三廠已鑄造,可發行','🟢 All 3 minted, ready to issue'):(n>0?'🟡 '+t('鑄造中','Minting')+'('+n+'/3)':t('⚪ 等待提交','⚪ Awaiting submissions'))}</p>
+      <button class="btn ${n>=3?'pri':''}" onclick="go('dpp')">${t('查看 DPP / QR','View DPP / QR')} →</button></div>
   </div>
 
-  <h2>訂單 ${ORDER.no} · 供應鏈位置</h2>
+  <h2>${t('訂單','Order')} ${ORDER.no} · ${t('供應鏈位置','Supply-chain position')}</h2>
   ${scHTML()}
   <div class="row" style="margin-top:6px">
-    <button class="btn" onclick="refreshAll()">↻ 重新整理收集狀態</button>
+    <button class="btn" onclick="refreshAll()">↻ ${t('重新整理收集狀態','Refresh status')}</button>
     <span class="right"></span>
-    <button class="btn warn" onclick="resetAll()">重置整批 Demo</button>
+    <button class="btn warn" onclick="resetAll()">${t('重置整批 Demo','Reset entire Demo')}</button>
   </div>`;
 }
 
@@ -289,13 +299,13 @@ function vPolicy(){
     const sel=state.sel[stage.id];
     let h='',lg='';
     for(const f of stage.fields){
-      if(f.grp!==lg){h+=`<tr class="grphead"><td colspan="3">▸ ${f.grp}</td></tr>`;lg=f.grp;}
+      if(f.grp!==lg){h+=`<tr class="grphead"><td colspan="3">▸ ${grpLabel(f.grp)}</td></tr>`;lg=f.grp;}
       const on=sel.indexOf(f.key)>=0;
-      h+=`<tr><td><label style="cursor:pointer"><input type="checkbox" ${on?'checked':''} onchange="toggleSel('${stage.id}','${f.key}')"> ${f.label}</label> ${f.sensitive?'<span class="vis" style="color:var(--jewel)">⚠機密</span>':''}</td>
-        <td class="vis">${f.rec==='public'?'建議公開':'建議加密'}</td><td class="fval">${f.key}</td></tr>`;
+      h+=`<tr><td><label style="cursor:pointer"><input type="checkbox" ${on?'checked':''} onchange="toggleSel('${stage.id}','${f.key}')"> ${fLabel(f)}</label> ${f.sensitive?`<span class="vis" style="color:var(--jewel)">⚠${t('機密','Confidential')}</span>`:''}</td>
+        <td class="vis">${f.rec==='public'?t('建議公開','Suggest public'):t('建議加密','Suggest encrypt')}</td><td class="fval">${f.key}</td></tr>`;
     }
-    return `<h3>${stage.brand} · ${stage.label}(${sel.length}/${stage.fields.length})</h3>
-      <table class="ftable"><tr><th>特徵</th><th>建議</th><th>key</th></tr>${h}</table>`;
+    return `<h3>${sBrand(stage)} · ${sLabel(stage)}(${sel.length}/${stage.fields.length})</h3>
+      <table class="ftable"><tr><th>${t('特徵','Feature')}</th><th>${t('建議','Suggested')}</th><th>key</th></tr>${h}</table>`;
   };
   const received=minted().length;   // 「鑄造完成」才算完成一站
   const allDone=received>=STAGES.length;
@@ -307,42 +317,42 @@ function vPolicy(){
   const seqBar=`<div class="scbar">`+STAGES.map((s,i)=>{
     const su=getSub(s.id); let cls='', tag='';
     if(su&&su.block){cls='done';tag=' ✓';}
-    else if(activeStage&&s.id===activeStage.id){cls='cur';tag=activePending?' ◷ 待鑄造':(dispatchedForActive?' ◷ 等待回傳':' ◀ 設定中');}
-    return `<span class="st ${cls}">${s.label}${tag}</span>`+(i<STAGES.length-1?'<span>→</span>':'');
+    else if(activeStage&&s.id===activeStage.id){cls='cur';tag=activePending?t(' ◷ 待鑄造',' ◷ to mint'):(dispatchedForActive?t(' ◷ 等待回傳',' ◷ awaiting return'):t(' ◀ 設定中',' ◀ configuring'));}
+    return `<span class="st ${cls}">${sLabel(s)}${tag}</span>`+(i<STAGES.length-1?'<span>→</span>':'');
   }).join('')+`</div>`;
 
   let body;
   if(allDone){
-    body=`<div class="callout key"><div class="t">🟢 序列完成</div>三廠政策已依序派發、全部回傳並鑄造上鏈。可前往 <b>DPP 與 QR</b> 發行護照。
-      <div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('dpp')">前往 DPP / QR →</button></div></div>`;
+    body=`<div class="callout key"><div class="t">🟢 ${t('序列完成','Sequence complete')}</div>${t('三廠政策已依序派發、全部回傳並鑄造上鏈。可前往','All three factory policies were dispatched in order, returned and minted. Go to')} <b>${t('DPP 與 QR','DPP & QR')}</b> ${t('發行護照。','to issue the passport.')}
+      <div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('dpp')">${t('前往 DPP / QR','Go to DPP / QR')} →</button></div></div>`;
   } else if(activePending){
-    body=`<div class="callout warn"><div class="t">🪙 ${activeStage.brand} 已回傳 · 待鑄造 NFT</div>
-      該廠已完成揭露決策並送回資料。請<b>鑄造其 DPP NFT</b>,鑄造完成後才會解鎖下一站(${STAGES[received+1]?STAGES[received+1].label:'—'})。
+    body=`<div class="callout warn"><div class="t">🪙 ${sBrand(activeStage)} ${t('已回傳 · 待鑄造 NFT','returned · NFT pending')}</div>
+      ${t('該廠已完成揭露決策並送回資料。請','This factory finished its disclosure and returned data. Please ')}<b>${t('鑄造其 DPP NFT','mint its DPP NFT')}</b>${t(',鑄造完成後才會解鎖下一站(','; the next stage unlocks only after minting (')}${STAGES[received+1]?sLabel(STAGES[received+1]):'—'})。
       <div class="row" style="margin-top:8px">
-        <button class="btn pri" onclick="mintStageToken('${activeStage.id}')">🪙 Mint NFT(真實上鏈)</button>
-        <button class="btn ghost" onclick="simulateMintStage('${activeStage.id}')">🧪 模擬上鏈(離線)</button>
-        <button class="btn" onclick="go('collect')">查看收集進度 →</button></div></div>`;
+        <button class="btn pri" onclick="mintStageToken('${activeStage.id}')">🪙 ${t('Mint NFT(真實上鏈)','Mint NFT (real)')}</button>
+        <button class="btn ghost" onclick="simulateMintStage('${activeStage.id}')">🧪 ${t('模擬上鏈(離線)','Simulate (offline)')}</button>
+        <button class="btn" onclick="go('collect')">${t('查看收集進度','View collection')} →</button></div></div>`;
   } else if(dispatchedForActive){
-    body=`<div class="callout info"><div class="t">🛰 已派發給 ${activeStage.brand} · 等待回傳</div>
-      該廠收件匣通知已亮起。等其完成「揭露決策 → 送出」並回傳後,即可在此<b>鑄造 NFT</b>,再設定下一站(${STAGES[received+1]?STAGES[received+1].label:'—'})。
-      <div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">查看收集進度 →</button>
-        <button class="btn ghost" onclick="dispatchPolicy('${activeStage.id}')">重新派發本站</button></div></div>`;
+    body=`<div class="callout info"><div class="t">🛰 ${t('已派發給','Dispatched to')} ${sBrand(activeStage)} · ${t('等待回傳','awaiting return')}</div>
+      ${t('該廠收件匣通知已亮起。等其完成「揭露決策 → 送出」並回傳後,即可在此','Its inbox badge is lit. Once it completes Disclosure → Submit and returns, you can ')}<b>${t('鑄造 NFT','mint the NFT')}</b>${t(',再設定下一站(',' here, then configure the next stage (')}${STAGES[received+1]?sLabel(STAGES[received+1]):'—'})。
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">${t('查看收集進度','View collection')} →</button>
+        <button class="btn ghost" onclick="dispatchPolicy('${activeStage.id}')">${t('重新派發本站','Redispatch this stage')}</button></div></div>`;
   } else {
-    body=`<div class="callout info"><div class="t">▶ 第 ${received+1} 站:設定「${activeStage.label}」要收集的特徵</div>
-      勾選本站要收集的欄位,按下方按鈕<b>只派發給 ${activeStage.brand}</b>。回傳並鑄造上鏈後才會解鎖下一站。</div>
+    body=`<div class="callout info"><div class="t">▶ ${t('第','Stage')} ${received+1} ${t('站:設定「','· configure features to collect for ')}${sLabel(activeStage)}${t('」要收集的特徵','')}</div>
+      ${t('勾選本站要收集的欄位,按下方按鈕','Tick the fields to collect for this stage, then ')}<b>${t('只派發給','dispatch only to')} ${sBrand(activeStage)}</b>${t('。回傳並鑄造上鏈後才會解鎖下一站。',' below. The next stage unlocks only after it returns and is minted.')}</div>
       ${rows(activeStage)}
       <div class="row" style="margin-top:14px"><span class="right"></span>
-        <button class="btn pri" onclick="dispatchPolicy('${activeStage.id}')">🛰 派發政策給 ${activeStage.label}廠</button></div>`;
+        <button class="btn pri" onclick="dispatchPolicy('${activeStage.id}')">🛰 ${t('派發政策給','Dispatch policy to')} ${sLabel(activeStage)}${t('廠','')}</button></div>`;
   }
 
-  return `<h1>政策建構器 · 序列派發</h1>
-  <p>依序對<b>每一站</b>挑選要收集的特徵:紡紗 → 織布 → 染整。每站回傳並<b>鑄造 NFT</b> 後,才設定並派發下一站(非同時派發)。</p>
+  return `<h1>${t('政策建構器 · 序列派發','Policy Builder · Sequential Dispatch')}</h1>
+  <p>${t('依序對','For ')}<b>${t('每一站','each stage')}</b>${t('挑選要收集的特徵:紡紗 → 織布 → 染整。每站回傳並',' pick the features to collect, in order: Spinning → Weaving → Dyeing. After each returns and is ')}<b>${t('鑄造 NFT','minted')}</b>${t(' 後,才設定並派發下一站(非同時派發)。',', you configure and dispatch the next (not all at once).')}</p>
   <div class="summary">
-    <div>保存年限</div>
+    <div>${t('保存年限','Retention')}</div>
     <select onchange="state.retention=+this.value">
-      ${[3,5,7,10,15].map(y=>`<option value="${y}" ${state.retention===y?'selected':''}>${y} 年</option>`).join('')}
+      ${[3,5,7,10,15].map(y=>`<option value="${y}" ${state.retention===y?'selected':''}>${y} ${t('年','yr')}</option>`).join('')}
     </select>
-    <div>派發次序</div><span class="pill">紡紗 → 織布 → 染整(逐站)</span>
+    <div>${t('派發次序','Order')}</div><span class="pill">${t('紡紗 → 織布 → 染整(逐站)','Spinning → Weaving → Dyeing (per stage)')}</span>
   </div>
   ${seqBar}
   ${body}`;
@@ -350,69 +360,70 @@ function vPolicy(){
 
 function vCollect(){
   const mn=minted().length;
-  return `<h1>收集進度 · 鑄造 NFT</h1>
-  <p>工廠回傳資料後,平台逐站<b>鑄造 DPP NFT</b>(IPFS 上傳 + Sepolia mintDPP);每塊以 previousTokenId 接續前一站。</p>
+  return `<h1>${t('收集進度 · 鑄造 NFT','Collection · Mint NFTs')}</h1>
+  <p>${t('工廠回傳資料後,平台逐站','After a factory returns data, the platform ')}<b>${t('鑄造 DPP NFT','mints a DPP NFT')}</b>${t('(IPFS 上傳 + Sepolia mintDPP);每塊以 previousTokenId 接續前一站。',' per stage (IPFS upload + Sepolia mintDPP); each block links to the previous via previousTokenId.')}</p>
   <ul class="timeline">
     ${STAGES.map(s=>{const sub=getSub(s.id); const done=sub&&sub.block; const pending=sub&&!sub.block;
       let detail;
       if(done){
         const b=sub.block;
-        const tx=b.real&&b.txHash?` · <a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:(b.real?'':' · 🧪 模擬');
-        detail=`<span class="pill">Token #${b.tokenId}</span> <span class="vis">🌐 ${sub.publicCount} 明文 · 🔒 ${sub.privateCount} 加密${tx}</span>`;
+        const tx=b.real&&b.txHash?` · <a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:(b.real?'':t(' · 🧪 模擬',' · 🧪 simulated'));
+        detail=`<span class="pill">Token #${b.tokenId}</span> <span class="vis">🌐 ${sub.publicCount} ${t('明文','public')} · 🔒 ${sub.privateCount} ${t('加密','encrypted')}${tx}</span>`;
       } else if(pending){
-        detail=`<span class="pill" style="background:var(--warnBg);color:var(--warn)">待鑄造</span> <span class="vis">🌐 ${sub.publicCount} 明文 · 🔒 ${sub.privateCount} 加密 · ${sub.ts}</span>
+        detail=`<span class="pill" style="background:var(--warnBg);color:var(--warn)">${t('待鑄造','To mint')}</span> <span class="vis">🌐 ${sub.publicCount} ${t('明文','public')} · 🔒 ${sub.privateCount} ${t('加密','encrypted')} · ${sub.ts}</span>
           <div class="row" style="margin-top:8px">
             <button class="btn pri" onclick="mintStageToken('${s.id}')">🪙 Mint NFT</button>
-            <button class="btn ghost" onclick="simulateMintStage('${s.id}')">🧪 模擬上鏈</button></div>`;
+            <button class="btn ghost" onclick="simulateMintStage('${s.id}')">🧪 ${t('模擬上鏈','Simulate')}</button></div>`;
       } else {
-        detail=state.policy&&state.policy.perStage&&state.policy.perStage[s.id]?'<span class="vis">已派發,等待工廠上傳…</span>':'<span class="vis">等待政策派發</span>';
+        detail=state.policy&&state.policy.perStage&&state.policy.perStage[s.id]?`<span class="vis">${t('已派發,等待工廠上傳…','Dispatched, awaiting factory upload…')}</span>`:`<span class="vis">${t('等待政策派發','Awaiting policy dispatch')}</span>`;
       }
       return `<li class="${done?'done':(pending?'cur':(state.policy?'cur':''))}"><span class="dot">${done?'✓':s.order+1}</span>
-        <div><b>${s.brand}</b> · ${s.label} ${detail}</div></li>`;
+        <div><b>${sBrand(s)}</b> · ${sLabel(s)} ${detail}</div></li>`;
     }).join('')}
-    <li class="${mn>=3?'cur':''}"><span class="dot">▣</span><div><b>平台彙整 DPP</b> · ${mn>=3?'三廠已鑄造,可發行':'待三廠鑄造完成'}</div></li>
+    <li class="${mn>=3?'cur':''}"><span class="dot">▣</span><div><b>${t('平台彙整 DPP','Platform compiles DPP')}</b> · ${mn>=3?t('三廠已鑄造,可發行','all 3 minted, ready to issue'):t('待三廠鑄造完成','awaiting all 3 mints')}</div></li>
   </ul>
   <div class="row">
-    <button class="btn" onclick="refreshAll()">↻ 重新整理</button>
-    ${mn>=3?`<button class="btn pri" onclick="go('dpp')">前往 DPP / QR →</button>`:''}
+    <button class="btn" onclick="refreshAll()">↻ ${t('重新整理','Refresh')}</button>
+    ${mn>=3?`<button class="btn pri" onclick="go('dpp')">${t('前往 DPP / QR','Go to DPP / QR')} →</button>`:''}
   </div>
-  <div class="callout jewel"><div class="t">🪙 鑄造規則</div>「🪙 Mint NFT」走真實流程:把該站 metadata 上傳 IPFS、再以平台錢包呼叫 <code>mintDPP</code> 鑄到 Sepolia(需在根目錄執行 npm start 開後端、並連錢包)。離線時用「🧪 模擬上鏈」。</div>`;
+  <div class="callout jewel"><div class="t">🪙 ${t('鑄造規則','Minting rules')}</div>${t('「🪙 Mint NFT」走真實流程:把該站 metadata 上傳 IPFS、再以平台錢包呼叫','🪙 Mint NFT runs the real flow: upload the stage metadata to IPFS, then call')} <code>mintDPP</code> ${t('鑄到 Sepolia(需在根目錄執行 npm start 開後端、並連錢包)。離線時用「🧪 模擬上鏈」。','on Sepolia via the platform wallet (needs npm start in the project root and a connected wallet). Offline, use 🧪 Simulate.')}</div>`;
 }
 
 function vChainExplorer(){
   const ch=minted();
-  if(!ch.length) return `<h1>區塊鏈瀏覽器</h1><div class="callout info"><div class="t">🛈 鏈上還沒有區塊</div>等工廠回傳、平台<b>鑄造 NFT</b> 後即會出現區塊。<div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">前往收集 / 鑄造 →</button></div></div>`;
+  if(!ch.length) return `<h1>${t('區塊鏈瀏覽器','Blockchain Explorer')}</h1><div class="callout info"><div class="t">🛈 ${t('鏈上還沒有區塊','No blocks on chain yet')}</div>${t('等工廠回傳、平台','Once factories return and the platform ')}<b>${t('鑄造 NFT','mints NFTs')}</b>${t('後即會出現區塊。',', blocks appear here.')}<div class="row" style="margin-top:8px"><button class="btn" onclick="go('collect')">${t('前往收集 / 鑄造','Go to collect / mint')} →</button></div></div>`;
   const anySim=ch.some(s=>!s.block.real);
   const vr=state.verifyResult;
-  let html=`<h1>區塊鏈瀏覽器 · 訂單 ${ORDER.no}</h1>
-  <div class="row">${anySim?`<button class="btn pri" onclick="verifyChain()">🔍 驗證鏈接完整性(模擬塊)</button>`:''}
-    ${vr?`<span class="chip ${vr.ok?'':'warn'}">${vr.ok?'🟢 鏈接完整 · 未被竄改':'🔴 鏈接異常'}</span>`:''}
-    <span class="right"></span><span class="vis">${ch.length} 個區塊</span></div>`;
+  let html=`<h1>${t('區塊鏈瀏覽器 · 訂單','Blockchain Explorer · Order')} ${ORDER.no}</h1>
+  <div class="row">${anySim?`<button class="btn pri" onclick="verifyChain()">🔍 ${t('驗證鏈接完整性(模擬塊)','Verify chain integrity (sim blocks)')}</button>`:''}
+    ${vr?`<span class="chip ${vr.ok?'':'warn'}">${vr.ok?t('🟢 鏈接完整 · 未被竄改','🟢 Chain intact · untampered'):t('🔴 鏈接異常','🔴 Chain anomaly')}</span>`:''}
+    <span class="right"></span><span class="vis">${ch.length} ${t('個區塊','blocks')}</span></div>`;
   ch.forEach((sub,i)=>{
     const b=sub.block; const chk=vr&&vr.blocks?vr.blocks[i]:null;
     const real=b.real;
+    const st=stageById(b.stage);
     const tokenCell=real&&b.txHash?`<a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">Token #${b.tokenId} ↗</a>`:`Token #${b.tokenId}`;
     html+=`${i>0?'<div class="link">⛓</div>':''}
     <div class="blk">
-      <div class="row"><span class="ix">${b.index}</span><b>${stageById(b.stage)?stageById(b.stage).brand:b.stage} · ${b.label}</b>
+      <div class="row"><span class="ix">${b.index}</span><b>${st?sBrand(st):b.stage} · ${st?sLabel(st):b.label}</b>
         <span class="right"></span><span class="pill">${tokenCell}</span>
-        <span class="chip ${real?'':'demo'}">${real?'⛓ Sepolia':'🧪 模擬'}</span>
-        ${chk?`<span class="chip ${chk.ok?'':'warn'}">${chk.ok?'✓ 驗證通過':'✗ 異常'}</span>`:''}</div>
-      <div class="kv">tx:${real&&b.txHash?`<a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">${b.txHash}</a>`:(b.txHash||'(模擬)')} · 時間 ${b.timestamp}</div>
-      <div class="kv">metadataHash:${b.metadataHash} · 🌐 ${sub.publicCount} 明文 / 🔒 ${sub.privateCount} 加密</div>
+        <span class="chip ${real?'':'demo'}">${real?'⛓ Sepolia':t('🧪 模擬','🧪 Simulated')}</span>
+        ${chk?`<span class="chip ${chk.ok?'':'warn'}">${chk.ok?t('✓ 驗證通過','✓ Verified'):t('✗ 異常','✗ Anomaly')}</span>`:''}</div>
+      <div class="kv">tx:${real&&b.txHash?`<a href="https://sepolia.etherscan.io/tx/${b.txHash}" target="_blank" rel="noopener">${b.txHash}</a>`:(b.txHash||t('(模擬)','(simulated)'))} · ${t('時間','Time')} ${b.timestamp}</div>
+      <div class="kv">metadataHash:${b.metadataHash} · 🌐 ${sub.publicCount} ${t('明文','public')} / 🔒 ${sub.privateCount} ${t('加密','encrypted')}</div>
       ${real?`<div class="kv">tokenURI:${b.gatewayURL?`<a href="${b.gatewayURL}" target="_blank" rel="noopener">${b.tokenURI}</a>`:(b.tokenURI||'')}</div>
-      <div class="kv">previousTokenId:${b.prevTokenId||'(無 · 創世段)'} · 合約 <code>${CONTRACT_ADDRESS}</code></div>`
-      :`<div class="kv">prevHash:${b.prevHash||'(無 · 創世段)'}</div>
+      <div class="kv">previousTokenId:${b.prevTokenId||t('(無 · 創世段)','(none · genesis)')} · ${t('合約','Contract')} <code>${CONTRACT_ADDRESS}</code></div>`
+      :`<div class="kv">prevHash:${b.prevHash||t('(無 · 創世段)','(none · genesis)')}</div>
       <div class="kv" style="color:var(--accent)">hash:${b.hash}</div>`}
     </div>`;
   });
-  html+=`<div class="callout key"><div class="t">🛈 鏈接與查驗</div>真實塊(⛓ Sepolia)以 <code>previousTokenId</code> 串接前一站,並可由 Etherscan / IPFS 連結獨立查驗;模擬塊以 <code>hash = H(index|stage|metadataHash|prevHash)</code> 串接,可按「驗證鏈接」檢查。</div>`;
+  html+=`<div class="callout key"><div class="t">🛈 ${t('鏈接與查驗','Linking & verification')}</div>${t('真實塊(⛓ Sepolia)以','Real blocks (⛓ Sepolia) link to the previous stage via')} <code>previousTokenId</code>${t('串接前一站,並可由 Etherscan / IPFS 連結獨立查驗;模擬塊以',' and are independently verifiable via Etherscan / IPFS; simulated blocks link via')} <code>hash = H(index|stage|metadataHash|prevHash)</code>${t('串接,可按「驗證鏈接」檢查。',', checkable with Verify Chain.')}</div>`;
   return html;
 }
 
 function vDPP(){
   const ch=minted();
-  if(ch.length<3) return `<h1>DPP 與 QR</h1><div class="callout warn"><div class="t">⏳ 尚未齊備(${ch.length}/3)</div>需三廠都依序送回並<b>鑄造 NFT</b> 才能發行完整護照。<div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('collect')">前往收集 / 鑄造 →</button></div></div>${ch.length?dppPreview(ch):''}`;
+  if(ch.length<3) return `<h1>${t('DPP 與 QR','DPP & QR')}</h1><div class="callout warn"><div class="t">⏳ ${t('尚未齊備','Not complete yet')}(${ch.length}/3)</div>${t('需三廠都依序送回並','All three factories must return in order and be ')}<b>${t('鑄造 NFT','minted')}</b> ${t('才能發行完整護照。','before the full passport can be issued.')}<div class="row" style="margin-top:8px"><button class="btn pri" onclick="go('collect')">${t('前往收集 / 鑄造','Go to collect / mint')} →</button></div></div>${ch.length?dppPreview(ch):''}`;
   return dppPreview(ch);
 }
 function dppHashOf(ch){ return simpleHash(ch.map(s=>s.block.hash||s.block.metadataHash).join('|')+ch.map(s=>s.fields.filter(f=>f.disclosure==='public').map(f=>f.val).join(',')).join('|')); }
@@ -422,7 +433,7 @@ function dppPreview(ch){
   const dh=dppHashOf(ch);
   const aud=state.audience;
   const isReg=aud==='regulator';
-  const audLabel=isReg?'法規機關':'消費者';
+  const audLabel=isReg?t('法規機關','Regulator'):t('消費者','Consumer');
   // QR 內含 view=對象,使不同對象產生「不同的 QR」
   const url=`https://dpp.example/p/A2207?view=${aud}#${dh}`;
   /* 揭露規則(兩種對象):
@@ -433,95 +444,96 @@ function dppPreview(ch){
   let body='', visTotal=0, priApproved=0;
   ch.forEach(s=>{
     const cat=stageById(s.stage);
-    const catVal=k=>{const c=cat&&cat.fields.find(x=>x.key===k);return c?c.val:'(原始值)';};
+    const catVal=k=>{const c=cat&&cat.fields.find(x=>x.key===k);return c?fVal(c):t('(原始值)','(original value)');};
     const pubs=s.fields.filter(f=>f.disclosure==='public');
     const pris=s.fields.filter(f=>f.disclosure==='private');
     const apprPris=isReg?pris.filter(f=>keyApproved(s.stage,f.key)):[];
     priApproved += apprPris.length;
     visTotal += pubs.length + apprPris.length;
-    const pubRows=pubs.map(f=>`<div class="attr"><span class="a-l">🌐 ${f.label}</span><span class="a-v">${f.val}</span></div>`).join('');
+    const pubRows=pubs.map(f=>`<div class="attr"><span class="a-l">🌐 ${fLabel(f)}</span><span class="a-v">${fVal(f)}</span></div>`).join('');
     const regRows=isReg?pris.map(f=>keyApproved(s.stage,f.key)
-      ?`<div class="attr"><span class="a-l" style="color:var(--jewel)">🔓 ${f.label} <span class="vis">(已放行解密)</span></span><span class="a-v" style="color:var(--jewel)">${catVal(f.key)}</span></div>`
-      :`<div class="attr"><span class="a-l">🔒 ${f.label} <span class="vis">(待工廠放行)</span></span><span class="a-v vis">向工廠申請鑰匙後可見</span></div>`).join(''):'';
-    body+=`<div class="bdcol pub"><h4>${cat?cat.brand:s.stage} · ${s.stageLabel} <span class="pill">Token #${s.block.tokenId}</span></h4>
-      ${pubs.length?pubRows:'<div class="vis">(本廠無公開欄位)</div>'}
+      ?`<div class="attr"><span class="a-l" style="color:var(--jewel)">🔓 ${fLabel(f)} <span class="vis">${t('(已放行解密)','(released)')}</span></span><span class="a-v" style="color:var(--jewel)">${catVal(f.key)}</span></div>`
+      :`<div class="attr"><span class="a-l">🔒 ${fLabel(f)} <span class="vis">${t('(待工廠放行)','(pending factory release)')}</span></span><span class="a-v vis">${t('向工廠申請鑰匙後可見','visible after requesting the key')}</span></div>`).join(''):'';
+    body+=`<div class="bdcol pub"><h4>${cat?sBrand(cat):s.stage} · ${cat?sLabel(cat):s.stageLabel} <span class="pill">Token #${s.block.tokenId}</span></h4>
+      ${pubs.length?pubRows:`<div class="vis">${t('(本廠無公開欄位)','(no public fields)')}</div>`}
       ${regRows}
-      ${!isReg&&pris.length?`<div class="kv" style="margin-top:8px;color:var(--jewel)">🔒 ${pris.length} 項加密欄位未揭露(消費者不可見;僅法規機關可審閱)</div>`:''}
+      ${!isReg&&pris.length?`<div class="kv" style="margin-top:8px;color:var(--jewel)">🔒 ${pris.length} ${t('項加密欄位未揭露(消費者不可見;僅法規機關可審閱)','encrypted fields hidden (not shown to consumers; regulator only)')}</div>`:''}
     </div>`;
   });
-  return `<h1>DPP 與 QR · 數位產品護照</h1>
-  <p>消費者只看工廠選擇<b>公開</b>的欄位;<b>法規機關</b>另具解密權,可額外審閱工廠<b>加密上傳</b>的欄位。</p>
-  <div class="row"><span>揭露對象:</span><span class="seg">
-    <button class="${aud==='consumer'?'on':''}" onclick="setAud('consumer')">消費者</button>
-    <button class="${aud==='regulator'?'on':''}" onclick="setAud('regulator')">法規機關</button>
-  </span><span class="right"></span><span class="vis">本對象可見 ${visTotal} 欄(🌐 公開 ${pubTotal}${isReg?` + 🔓 已解密 ${priApproved}${priApproved<priTotal?` · 🔒 待放行 ${priTotal-priApproved}`:''}`:` · 🔒 加密隱藏 ${priTotal}`})</span></div>
+  return `<h1>${t('DPP 與 QR · 數位產品護照','DPP & QR · Digital Product Passport')}</h1>
+  <p>${t('消費者只看工廠選擇','Consumers see only the fields the factory marked ')}<b>${t('公開','public')}</b>${t('的欄位;','; the ')}<b>${t('法規機關','regulator')}</b>${t('另具解密權,可額外審閱工廠','has decryption rights and can additionally review the factory ')}<b>${t('加密上傳','encrypted')}</b>${t('的欄位。',' fields.')}</p>
+  <div class="row"><span>${t('揭露對象:','Audience:')}</span><span class="seg">
+    <button class="${aud==='consumer'?'on':''}" onclick="setAud('consumer')">${t('消費者','Consumer')}</button>
+    <button class="${aud==='regulator'?'on':''}" onclick="setAud('regulator')">${t('法規機關','Regulator')}</button>
+  </span><span class="right"></span><span class="vis">${t('本對象可見','Visible to this audience:')} ${visTotal} ${t('欄','fields')}(🌐 ${t('公開','public')} ${pubTotal}${isReg?` + 🔓 ${t('已解密','decrypted')} ${priApproved}${priApproved<priTotal?` · 🔒 ${t('待放行','pending')} ${priTotal-priApproved}`:''}`:` · 🔒 ${t('加密隱藏','hidden')} ${priTotal}`})</span></div>
 
   <div class="grid2" style="margin-top:8px;align-items:start">
     <div class="passport">
       <div class="hd"><div class="eyebrow" style="color:#cfe1ff">DIGITAL PRODUCT PASSPORT</div>
-        <h3>${ORDER.product}</h3>
-        <div style="opacity:.92;font-size:13px">訂單 ${ORDER.no} · 發行方 ${ORDER.issuer} · 🔗 已上鏈三段</div></div>
+        <h3>${t(ORDER.product,ORDER.productEn)}</h3>
+        <div style="opacity:.92;font-size:13px">${t('訂單','Order')} ${ORDER.no} · ${t('發行方','Issuer')} ${t(ORDER.issuer,ORDER.issuerEn)} · 🔗 ${t('已上鏈三段','3 stages on-chain')}</div></div>
       <div class="bd">
         ${body}
       </div>
     </div>
     <div>
       <div class="card" style="text-align:center">
-        <h3 style="margin-top:0">📱 護照 QR(${audLabel})</h3>
+        <h3 style="margin-top:0">📱 ${t('護照 QR','Passport QR')}(${audLabel})</h3>
         <div class="qr"><canvas id="dppQR"></canvas></div>
         <div class="kv" id="qrUrl" style="margin-top:10px;word-break:break-all">${url}</div>
-        <div class="vis">掃描可開啟對應對象的護照檢視</div>
+        <div class="vis">${t('掃描可開啟對應對象的護照檢視','Scan to open the passport view for this audience')}</div>
       </div>
       <div class="card">
-        <div class="kv">DPP 雜湊:${dh}</div>
-        <div class="kv">溯源鏈:${ch.map(s=>s.stageLabel).join(' → ')} → DPP</div>
-        <div class="kv" style="color:var(--good)">🟢 三段皆已上鏈 · 可密碼學查驗</div>
-        <div class="row" style="margin-top:8px"><button class="btn" onclick="go('chain')">看區塊鏈 →</button><button class="btn ghost" onclick="showDppJson()">DPP JSON ▾</button></div>
+        <div class="kv">${t('DPP 雜湊','DPP hash')}:${dh}</div>
+        <div class="kv">${t('溯源鏈','Trace chain')}:${ch.map(s=>{const c=stageById(s.stage);return c?sLabel(c):s.stageLabel;}).join(' → ')} → DPP</div>
+        <div class="kv" style="color:var(--good)">🟢 ${t('三段皆已上鏈 · 可密碼學查驗','All 3 stages on-chain · cryptographically verifiable')}</div>
+        <div class="row" style="margin-top:8px"><button class="btn" onclick="go('chain')">${t('看區塊鏈','View blockchain')} →</button><button class="btn ghost" onclick="showDppJson()">DPP JSON ▾</button></div>
       </div>
     </div>
   </div>
-  <div class="callout jewel"><div class="t">🔒 選擇性揭露</div>消費者只見工廠公開的明文欄位;加密欄位對其不揭露。<b>法規機關</b>具解密權,可額外審閱工廠加密上傳的欄位(🔓)。</div>`;
+  <div class="callout jewel"><div class="t">🔒 ${t('選擇性揭露','Selective disclosure')}</div>${t('消費者只見工廠公開的明文欄位;加密欄位對其不揭露。','Consumers see only the public plaintext fields; encrypted fields are not disclosed to them. The ')}<b>${t('法規機關','regulator')}</b>${t('具解密權,可額外審閱工廠加密上傳的欄位(🔓)。',' has decryption rights and can additionally review the factory encrypted fields (🔓).')}</div>`;
 }
 
 function vKeys(){
   const ch=subs();
   const enc=[];
-  ch.forEach(s=>s.fields.filter(f=>f.disclosure==='private').forEach(f=>enc.push({stage:s.stage,stageLabel:s.stageLabel,label:f.label,key:f.key,cipher:f.cipher})));
+  ch.forEach(s=>s.fields.filter(f=>f.disclosure==='private').forEach(f=>enc.push({stage:s.stage,stageLabel:s.stageLabel,label:f.label,labelEn:f.labelEn,key:f.key,cipher:f.cipher})));
   const reqs=Bus.get('keyRequests')||[];
-  return `<h1>金鑰 / 驗證請求</h1>
-  <p>平台手上每個工廠的密文都「打不開」。要查驗加密欄位,必須<b>向該工廠申請鑰匙</b>,由工廠在其端點放行。</p>
-  ${enc.length?`<h2>鏈上的加密欄位(${enc.length})</h2>
-  <table class="ftable"><tr><th>階段</th><th>欄位</th><th>密文(平台所見)</th><th></th></tr>
+  return `<h1>${t('金鑰 / 驗證請求','Keys / Verify Requests')}</h1>
+  <p>${t('平台手上每個工廠的密文都「打不開」。要查驗加密欄位,必須','Every factory ciphertext held by the platform is unopenable. To audit an encrypted field you must ')}<b>${t('向該工廠申請鑰匙','request the key from that factory')}</b>${t(',由工廠在其端點放行。',', which the factory releases at its endpoint.')}</p>
+  ${enc.length?`<h2>${t('鏈上的加密欄位','Encrypted fields on chain')}(${enc.length})</h2>
+  <table class="ftable"><tr><th>${t('階段','Stage')}</th><th>${t('欄位','Field')}</th><th>${t('密文(平台所見)','Ciphertext (platform view)')}</th><th></th></tr>
     ${enc.map(e=>{const r=reqs.find(x=>x.stage===e.stage&&x.key===e.key); const st=r&&r.status; let cell;
-      if(st==='approved') cell=`<span class="chip">✅ 工廠已放行</span>`;
-      else if(st==='denied') cell=`<span class="chip warn">⛔ 工廠已拒絕</span> <button class="btn ghost" onclick="requestKey('${e.stage}','${e.key}')">重新申請</button>`;
-      else if(st==='pending') cell=`<span class="chip demo">⏳ 已申請 · 待工廠放行</span>`;
-      else cell=`<button class="btn" onclick="requestKey('${e.stage}','${e.key}')">向工廠申請鑰匙</button>`;
-      return `<tr><td>${e.stageLabel}</td><td>🔒 ${e.label}</td><td class="fval">${e.cipher||'ENC(••••)'}</td>
+      if(st==='approved') cell=`<span class="chip">✅ ${t('工廠已放行','Factory released')}</span>`;
+      else if(st==='denied') cell=`<span class="chip warn">⛔ ${t('工廠已拒絕','Factory denied')}</span> <button class="btn ghost" onclick="requestKey('${e.stage}','${e.key}')">${t('重新申請','Request again')}</button>`;
+      else if(st==='pending') cell=`<span class="chip demo">⏳ ${t('已申請 · 待工廠放行','Requested · awaiting release')}</span>`;
+      else cell=`<button class="btn" onclick="requestKey('${e.stage}','${e.key}')">${t('向工廠申請鑰匙','Request key')}</button>`;
+      const stg=stageById(e.stage);
+      return `<tr><td>${stg?sLabel(stg):e.stageLabel}</td><td>🔒 ${t(e.label,e.labelEn||e.label)}</td><td class="fval">${e.cipher||'ENC(••••)'}</td>
       <td>${cell}</td></tr>`;}).join('')}
-  </table>`:'<div class="callout info">目前鏈上沒有加密欄位,或尚無提交。</div>'}
-  <div class="callout key"><div class="t">🛈 對應工作流②</div>「ALL 資料都會送回平台,但只有公開欄位是明文;其餘是密文,需經工廠同意取得鑰匙才能驗證。」工廠在其「驗證請求」頁放行後,智能合約 / TEE 才會釋放該欄位的解密能力。</div>`;
+  </table>`:`<div class="callout info">${t('目前鏈上沒有加密欄位,或尚無提交。','No encrypted fields on chain yet, or no submissions.')}</div>`}
+  <div class="callout key"><div class="t">🛈 ${t('對應工作流②','Workflow ②')}</div>${t('「ALL 資料都會送回平台,但只有公開欄位是明文;其餘是密文,需經工廠同意取得鑰匙才能驗證。」工廠在其「驗證請求」頁放行後,智能合約 / TEE 才會釋放該欄位的解密能力。','All data returns to the platform, but only public fields are plaintext; the rest is ciphertext and needs the factory consent to obtain the key before it can be verified. After the factory releases it on its Verify Requests page, the smart contract / TEE unlocks decryption for that field.')}</div>`;
 }
 
-function vSimple(t,b){return `<h1>${t}</h1>${b}`;}
+function vSimple(title,body){return `<h1>${title}</h1>${body}`;}
 
 function render(){
-  renderNav(); renderConn();
+  renderTopbar(); renderNav();
   const v=state.view;
   const map={home:vHome,policy:vPolicy,collect:vCollect,chain:vChainExplorer,dpp:vDPP,keys:vKeys};
   let html;
   if(map[v]) html=map[v]();
-  else if(v==='events') html=vSimple('事件通知',`<div class="card"><ul class="timeline">
-    ${(state.events.length?state.events:[{msg:'(尚無事件)',ts:''}]).map(e=>`<li class="done"><span class="dot">✓</span>${e.msg} <span class="vis">${e.ts}</span></li>`).join('')}
-  </ul></div><div class="callout info"><div class="t">🛈 Email 觸發</div>派發政策 / 收到提交都會在這裡留下事件;點進收集進度即可處理。</div>`);
-  else if(v==='settings') html=vSimple('設定',`<div class="card">
-    <div class="kv">平台身分(DID):did:web:longadvance-platform.example</div>
-    <div class="kv">簽章金鑰:🟢 就緒(政策以平台私鑰簽章)</div>
-    <div class="kv">區塊鏈:模擬 ERC-721(本原型)</div>
-    <div class="kv">資料匯流排:同源 localStorage(<code>dpp_demo:*</code>)</div>
-    <div class="kv">QR:內嵌離線產生器(無外網相依)</div>
-    <div class="kv">語言:繁體中文</div>
-    <div class="row" style="margin-top:10px"><button class="btn warn" onclick="resetAll()">重置整批 Demo(清空政策 / 提交)</button></div>
+  else if(v==='events') html=vSimple(t('事件通知','Notifications'),`<div class="card"><ul class="timeline">
+    ${(state.events.length?state.events:[{msg:t('(尚無事件)','(no events)'),ts:''}]).map(e=>`<li class="done"><span class="dot">✓</span>${e.msg} <span class="vis">${e.ts}</span></li>`).join('')}
+  </ul></div><div class="callout info"><div class="t">🛈 ${t('Email 觸發','Email triggers')}</div>${t('派發政策 / 收到提交都會在這裡留下事件;點進收集進度即可處理。','Dispatching a policy or receiving a submission logs an event here; open Collection to act on it.')}</div>`);
+  else if(v==='settings') html=vSimple(t('設定','Settings'),`<div class="card">
+    <div class="kv">${t('平台身分(DID)','Platform identity (DID)')}:did:web:longadvance-platform.example</div>
+    <div class="kv">${t('簽章金鑰:🟢 就緒(政策以平台私鑰簽章)','Signing key: 🟢 ready (policies signed with the platform private key)')}</div>
+    <div class="kv">${t('區塊鏈:模擬 ERC-721(本原型)','Blockchain: simulated ERC-721 (this prototype)')}</div>
+    <div class="kv">${t('資料匯流排:同源 localStorage','Data bus: same-origin localStorage')}(<code>dpp_demo:*</code>)</div>
+    <div class="kv">${t('QR:內嵌離線產生器(無外網相依)','QR: embedded offline generator (no external dependency)')}</div>
+    <div class="kv">${t('語言','Language')}:${t('繁體中文','English')}</div>
+    <div class="row" style="margin-top:10px"><button class="btn warn" onclick="resetAll()">${t('重置整批 Demo(清空政策 / 提交)','Reset entire Demo (clear policy / submissions)')}</button></div>
   </div>`);
   else html=vSimple('—','');
   document.getElementById('main').innerHTML=html;
@@ -530,7 +542,7 @@ function render(){
     const cv=document.getElementById('dppQR');
     if(cv){ const ch=minted(); if(ch.length){ const url=document.getElementById('qrUrl').textContent;
       const ok=QR.render(cv,url,{scale:6,ec:'Q'});
-      if(!ok){cv.outerHTML='<div class="kv" style="color:var(--warn)">QR 產生器未載入;網址見下方</div>';}
+      if(!ok){cv.outerHTML=`<div class="kv" style="color:var(--warn)">${t('QR 產生器未載入;網址見下方','QR generator not loaded; see the URL below')}</div>`;}
     }}
   }
 }
@@ -553,8 +565,8 @@ function addStageToPolicy(stageId){
 function dispatchPolicy(stageId){
   const stage=stageById(stageId);
   addStageToPolicy(stageId);
-  logEvent('已派發收集政策給 '+stage.label+'廠(序列第 '+(stage.order+1)+' 站)');
-  toast('🛰 已派發政策給 '+stage.label+'廠 · 等其回傳上鏈後再設定下一站');
+  logEvent(t('已派發收集政策給','Dispatched policy to')+' '+sLabel(stage)+' '+t('(序列第','(stage')+' '+(stage.order+1)+t(' 站)',')'));
+  toast('🛰 '+t('已派發政策給','Dispatched to')+' '+sLabel(stage)+' · '+t('等其回傳上鏈後再設定下一站','configure the next stage after it returns and is minted'));
   render();
 }
 
@@ -579,55 +591,55 @@ function mintBlock(sub){
 }
 
 /* ===================== 真實上鏈:IPFS 上傳 + Sepolia mintDPP(沿用 DPP_NFT 方法) ===================== */
-const MINT_STEPS=['連接錢包 / Sepolia','建立 metadata 並計算 keccak256','上傳 metadata 至 IPFS(Pinata)','送出 mintDPP 交易','等待 Sepolia 確認'];
+const MINT_STEPS=[['連接錢包 / Sepolia','Connect wallet / Sepolia'],['建立 metadata 並計算 keccak256','Build metadata & compute keccak256'],['上傳 metadata 至 IPFS(Pinata)','Upload metadata to IPFS (Pinata)'],['送出 mintDPP 交易','Send mintDPP transaction'],['等待 Sepolia 確認','Await Sepolia confirmation']];
 function renderMintModal(p){
   const rows=MINT_STEPS.map((s,i)=>{
     const done=p.done||i<p.step, cur=i===p.step;
     const mark=done?'✓':(cur?(p.error?'✗':'◷'):(i+1));
-    return `<li class="${done?'done':(cur?'cur':'')}"><span class="dot">${mark}</span>${s}</li>`;
+    return `<li class="${done?'done':(cur?'cur':'')}"><span class="dot">${mark}</span>${t(s[0],s[1])}</li>`;
   }).join('');
   let foot;
-  if(p.error){ foot=`<div class="callout warn"><div class="t">⚠ 失敗</div>${p.error}</div><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">關閉</button></div>`; }
-  else if(p.done){ foot=`<div class="callout key"><div class="t">✅ 已上鏈</div>Token #${p.tokenId}${p.txHash?` · <a href="https://sepolia.etherscan.io/tx/${p.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:''}</div><div class="row"><span class="right"></span><button class="btn pri" onclick="closeModal()">完成</button></div>`; }
-  else { foot=`<div class="callout info"><div class="t">⏳ 進行中</div>${p.message||''}</div>`; }
-  openModal(`<h3>🪙 鑄造 ${p.stageLabel} DPP NFT</h3><ul class="timeline">${rows}</ul>${foot}`);
+  if(p.error){ foot=`<div class="callout warn"><div class="t">⚠ ${t('失敗','Failed')}</div>${p.error}</div><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">${t('關閉','Close')}</button></div>`; }
+  else if(p.done){ foot=`<div class="callout key"><div class="t">✅ ${t('已上鏈','On-chain')}</div>Token #${p.tokenId}${p.txHash?` · <a href="https://sepolia.etherscan.io/tx/${p.txHash}" target="_blank" rel="noopener">Etherscan ↗</a>`:''}</div><div class="row"><span class="right"></span><button class="btn pri" onclick="closeModal()">${t('完成','Done')}</button></div>`; }
+  else { foot=`<div class="callout info"><div class="t">⏳ ${t('進行中','In progress')}</div>${p.message||''}</div>`; }
+  openModal(`<h3>🪙 ${t('鑄造','Mint')} ${p.stageLabel} DPP NFT</h3><ul class="timeline">${rows}</ul>${foot}`);
 }
 async function mintStageToken(stageId){
   const stage=stageById(stageId), sub=getSub(stageId);
-  if(!sub){ toast('找不到該廠提交'); return; }
-  if(sub.block){ toast('該廠已鑄造 Token #'+sub.block.tokenId); return; }
-  const p={stageLabel:stage.label, step:0, message:'正在連接錢包並確認 Sepolia…', error:null, done:false};
+  if(!sub){ toast(t('找不到該廠提交','Factory submission not found')); return; }
+  if(sub.block){ toast(t('該廠已鑄造 Token #','Already minted Token #')+sub.block.tokenId); return; }
+  const p={stageLabel:sLabel(stage), step:0, message:t('正在連接錢包並確認 Sepolia…','Connecting wallet and confirming Sepolia…'), error:null, done:false};
   renderMintModal(p);
   try{
-    if(typeof ethers==='undefined') throw new Error('ethers.js 載入失敗(離線?)。可改用「🧪 模擬上鏈」。');
-    if(!window.ethereum) throw new Error('找不到 EVM 瀏覽器錢包。請安裝 MetaMask,或改用「🧪 模擬上鏈」。');
+    if(typeof ethers==='undefined') throw new Error(t('ethers.js 載入失敗(離線?)。可改用「🧪 模擬上鏈」。','ethers.js failed to load (offline?). Use 🧪 Simulate instead.'));
+    if(!window.ethereum) throw new Error(t('找不到 EVM 瀏覽器錢包。請安裝 MetaMask,或改用「🧪 模擬上鏈」。','No EVM browser wallet found. Install MetaMask, or use 🧪 Simulate.'));
     const account=walletState.account||await connectWallet();
-    if(!account) throw new Error('尚未取得錢包帳號。請允許網站連接錢包後重試。');
-    if(!isSepolia()){ const ok=await switchToSepolia(); if(!ok) throw new Error('目前不是 Sepolia,而且網路切換未完成。'); }
+    if(!account) throw new Error(t('尚未取得錢包帳號。請允許網站連接錢包後重試。','No wallet account. Allow the site to connect your wallet and retry.'));
+    if(!isSepolia()){ const ok=await switchToSepolia(); if(!ok) throw new Error(t('目前不是 Sepolia,而且網路切換未完成。','Not on Sepolia, and the network switch did not complete.')); }
 
     const prevStage=stage.prev?stageById(stage.prev):null;
     const prevSub=prevStage?getSub(prevStage.id):null;
     const previousTokenId=prevSub&&prevSub.block?(Number(prevSub.block.tokenId)||0):0;
 
-    p.step=1; p.message='正在建立 canonical metadata 並計算 keccak256…'; renderMintModal(p);
+    p.step=1; p.message=t('正在建立 canonical metadata 並計算 keccak256…','Building canonical metadata and computing keccak256…'); renderMintModal(p);
     const metadata=buildStageMetadata(stage, sub, previousTokenId);
     const hashes=computeDPPHashes(metadata, stage);
 
-    p.step=2; p.message='正在透過本機 backend 上傳 metadata 至 Pinata / IPFS…'; renderMintModal(p);
+    p.step=2; p.message=t('正在透過本機 backend 上傳 metadata 至 Pinata / IPFS…','Uploading metadata to Pinata / IPFS via the local backend…'); renderMintModal(p);
     const upload=await uploadMetadataToIPFS(metadata);
 
-    if(!ethers.isAddress(CONTRACT_ADDRESS)||CONTRACT_ADDRESS===ethers.ZeroAddress) throw new Error('NFT 合約位址尚未設定。');
+    if(!ethers.isAddress(CONTRACT_ADDRESS)||CONTRACT_ADDRESS===ethers.ZeroAddress) throw new Error(t('NFT 合約位址尚未設定。','NFT contract address is not set.'));
     const provider=new ethers.BrowserProvider(window.ethereum);
     const network=await provider.getNetwork();
-    if(Number(network.chainId)!==SEPOLIA_CHAIN_ID) throw new Error('錢包目前不是 Sepolia,請切換後重試。');
+    if(Number(network.chainId)!==SEPOLIA_CHAIN_ID) throw new Error(t('錢包目前不是 Sepolia,請切換後重試。','Wallet is not on Sepolia; switch and retry.'));
     const signer=await provider.getSigner();
     const recipient=await signer.getAddress();
     const contract=new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    p.step=3; p.message='請在錢包中確認 mintDPP 交易…'; renderMintModal(p);
+    p.step=3; p.message=t('請在錢包中確認 mintDPP 交易…','Confirm the mintDPP transaction in your wallet…'); renderMintModal(p);
     const tx=await contract.mintDPP(recipient, upload.tokenURI, hashes.metadataHash, hashes.schemaHash, hashes.orderHash, hashes.stage, BigInt(previousTokenId));
 
-    p.step=4; p.txHash=tx.hash; p.message='交易已送出,等待 Sepolia 確認…'; renderMintModal(p);
+    p.step=4; p.txHash=tx.hash; p.message=t('交易已送出,等待 Sepolia 確認…','Transaction sent, awaiting Sepolia confirmation…'); renderMintModal(p);
     const receipt=await tx.wait();
     let tokenId=null;
     for(const log of receipt.logs){ try{ const parsed=contract.interface.parseLog(log); if(parsed?.name==='DPPMinted'){ tokenId=parsed.args.tokenId.toString(); break; } }catch(_){} }
@@ -636,13 +648,13 @@ async function mintStageToken(stageId){
       tokenId: tokenId||'?', txHash:tx.hash, tokenURI:upload.tokenURI, cid:upload.cid, gatewayURL:upload.gatewayURL,
       metadataHash:hashes.metadataHash, prevTokenId:previousTokenId, timestamp:nowUTC(), issuer:recipient, real:true };
     Bus.set('submission:'+stage.id, Object.assign({}, sub, { block, metadata, canonicalJson:hashes.canonicalJson }));
-    logEvent(stage.label+'廠 → 平台已鑄造 DPP NFT · Token #'+block.tokenId);
+    logEvent(sLabel(stage)+' → '+t('平台已鑄造 DPP NFT','platform minted DPP NFT')+' · Token #'+block.tokenId);
     p.done=true; p.tokenId=block.tokenId; renderMintModal(p);
-    toast('⛓ '+stage.label+'廠 已上鏈 · Token #'+block.tokenId);
+    toast('⛓ '+sLabel(stage)+' '+t('已上鏈','on-chain')+' · Token #'+block.tokenId);
     render();
   }catch(error){
     console.error('mintStageToken failed:',error);
-    p.error=walletErrorMessage(error,'Mint 失敗,請查看瀏覽器 console。'); renderMintModal(p);
+    p.error=walletErrorMessage(error,t('Mint 失敗,請查看瀏覽器 console。','Mint failed; see the browser console.')); renderMintModal(p);
     toast(p.error);
   }
 }
@@ -652,8 +664,8 @@ function simulateMintStage(stageId){
   if(!sub||sub.block){ render(); return; }
   const block=mintBlock(sub);
   Bus.set('submission:'+stage.id, Object.assign({}, sub, { block }));
-  logEvent(stage.label+'廠 →(模擬)平台上鏈 · Token #'+block.tokenId);
-  toast('🧪(模擬)已為 '+stage.label+'廠 上鏈 · Token #'+block.tokenId);
+  logEvent(sLabel(stage)+' → '+t('(模擬)平台上鏈','(simulated) platform minted')+' · Token #'+block.tokenId);
+  toast('🧪 '+t('(模擬)已為','(simulated) minted')+' '+sLabel(stage)+' · Token #'+block.tokenId);
   render();
 }
 
@@ -670,7 +682,7 @@ function verifyChain(){
     blocks.push({ok:bok,hashOk,linkOk});
   }
   state.verifyResult={ok,blocks};
-  toast(ok?'🟢 驗證通過:模擬塊雜湊與鏈接一致':'🔴 發現異常:有模擬塊雜湊或鏈接對不上');
+  toast(ok?t('🟢 驗證通過:模擬塊雜湊與鏈接一致','🟢 Verified: simulated block hashes and links are consistent'):t('🔴 發現異常:有模擬塊雜湊或鏈接對不上','🔴 Anomaly: a simulated block hash or link does not match'));
   render();
 }
 function setAud(a){state.audience=a;render();}
@@ -679,28 +691,28 @@ function requestKey(stage,key){
   let r=reqs.find(x=>x.stage===stage&&x.key===key);
   if(r){ r.status='pending'; r.ts=nowUTC(); delete r.decidedTs; } else { reqs.push({stage,key,from:'platform',status:'pending',ts:nowUTC()}); }
   Bus.set('keyRequests',reqs);
-  logEvent('向 '+(stageById(stage)?stageById(stage).label:stage)+'廠 申請「'+key+'」解密鑰匙');
-  toast('已送出鑰匙申請 · 需該工廠在其「驗證請求」頁放行');
+  logEvent(t('向','Requested decryption key')+' '+(stageById(stage)?sLabel(stageById(stage)):stage)+' '+t('廠 申請「','for field ')+key+t('」解密鑰匙','',));
+  toast(t('已送出鑰匙申請 · 需該工廠在其「驗證請求」頁放行','Key request sent · the factory must release it on its Verify Requests page'));
   render();
 }
-function refreshAll(){ state.policy=Bus.get('policy'); state.verifyResult=null; toast('已重新讀取收集狀態'); render(); }
+function refreshAll(){ state.policy=Bus.get('policy'); state.verifyResult=null; toast(t('已重新讀取收集狀態','Reloaded collection status')); render(); }
 function resetAll(){
-  openModal(`<h3>重置整批 Demo?</h3><p>會清空已派發政策與三廠提交(<code>dpp_demo:*</code>),回到初始狀態。</p>
-    <div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">取消</button>
-    <button class="btn warn" onclick="doReset()">確認重置</button></div>`);
+  openModal(`<h3>${t('重置整批 Demo?','Reset entire Demo?')}</h3><p>${t('會清空已派發政策與三廠提交','Clears the dispatched policy and all three factory submissions')}(<code>dpp_demo:*</code>)${t(',回到初始狀態。',', returning to the initial state.')}</p>
+    <div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">${t('取消','Cancel')}</button>
+    <button class="btn warn" onclick="doReset()">${t('確認重置','Confirm reset')}</button></div>`);
 }
 function doReset(){
   ['policy','submission:spin','submission:weave','submission:dye','keyRequests','events'].forEach(k=>Bus.del(k));
   Bus.set('reset',{ts:Date.now()}); // 通知工廠端清掉已送狀態
   state.policy=null; state.verifyResult=null; state.events=[]; state.unseen=0;
-  closeModal(); toast('已重置整批 Demo'); go('home');
+  closeModal(); toast(t('已重置整批 Demo','Entire Demo reset')); go('home');
 }
 function showDppJson(){
   const ch=minted(); const dpp={ order:ORDER.no, product:ORDER.product, issuer:ORDER.issuer, dppHash:dppHashOf(ch),
     chain:ch.map(s=>({stage:s.stage,token:s.block.tokenId,real:!!s.block.real,tokenURI:s.block.tokenURI||null,hash:s.block.hash||s.block.metadataHash,prev:s.block.prevTokenId??s.block.prevHash??null})),
     public:{} };
   ch.forEach(s=>{ dpp.public[s.stage]={}; s.fields.filter(f=>f.disclosure==='public').forEach(f=>dpp.public[s.stage][f.key]=f.val); });
-  openModal(`<h3>DPP JSON(只含明文)</h3><pre class="code">${JSON.stringify(dpp,null,2).replace(/</g,'&lt;')}</pre><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">關閉</button></div>`);
+  openModal(`<h3>${t('DPP JSON(只含明文)','DPP JSON (public only)')}</h3><pre class="code">${JSON.stringify(dpp,null,2).replace(/</g,'&lt;')}</pre><div class="row"><span class="right"></span><button class="btn" onclick="closeModal()">${t('關閉','Close')}</button></div>`);
 }
 
 /* ---------- modal / toast ---------- */
@@ -721,19 +733,21 @@ Bus.onChange((key,val)=>{
       /* === BLOCKCHAIN INTEGRATION POINT ===
          工廠剛回傳原始提交(尚未上鏈)。平台「不」自動上鏈,而是在收集進度顯示
          「🪙 Mint NFT」按鈕,由平台操作員手動鑄造(真實上鏈或模擬上鏈)。 */
-      logEvent((st?st.label:val.stage)+'廠 已上傳 · 待平台鑄造 NFT');
-      toast('📥 收到 '+(st?st.label:val.stage)+'廠 提交 · 請至收集進度鑄造 NFT');
+      logEvent((st?sLabel(st):val.stage)+' '+t('已上傳 · 待平台鑄造 NFT','uploaded · awaiting platform mint'));
+      toast('📥 '+t('收到','Received')+' '+(st?sLabel(st):val.stage)+' '+t('提交 · 請至收集進度鑄造 NFT','submission · go to Collection to mint'));
       if(state.view!=='collect' && state.view!=='policy') state.unseen++;
       render();
       return;
     }
     /* 已含 block(例如模擬上鏈於另一分頁完成) */
     if(state.view!=='collect') state.unseen++;
-    logEvent((st?st.label:val.stage)+'廠 已上鏈 · Token #'+val.block.tokenId);
+    logEvent((st?sLabel(st):val.stage)+' '+t('已上鏈','on-chain')+' · Token #'+val.block.tokenId);
     render();
   }
   /* 工廠在其「驗證請求」頁放行/拒絕了解密鑰匙 → 反映到金鑰頁與法規視角 */
-  if(key==='keyRequests'){ toast('🔑 工廠已更新驗證請求放行狀態'); render(); }
+  if(key==='keyRequests'){ toast(t('🔑 工廠已更新驗證請求放行狀態','🔑 Factory updated verify-request status')); render(); }
+  /* 另一分頁切換語言 → 本頁同步重繪 */
+  if(key==='lang'){ render(); }
 });
 
 render();

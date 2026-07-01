@@ -3,3 +3,6 @@
 .env
 node_modules/
 .gstack/
+
+# 本機參考文件(勿入版控)
+docs/cwa18291_2025.md
