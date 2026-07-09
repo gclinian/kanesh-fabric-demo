@@ -125,6 +125,16 @@ npm run serve        # = python3 -m http.server 8000 → http://localhost:8000/p
 - 合約 `mintDPP` 為 unrestricted(任何人可鑄),demo 用沒問題;正式需加 issuer 權限。
 - 根目錄原本的參考樣板 `factory-endpoint.html` 已刪除(無任何程式碼引用)。仍保留 `docs/dpp-nft/factory-endpoint.html`(不同檔,DPP_NFT 原始端點,平台 mint 程式碼的移植來源,且 `dpp-demo.test.mjs` 會讀它,勿刪)。
 
+## 法規知識庫與 CWA 對齊計畫(2026-07)
+- **查法規一律用 `docs/cwa18291-reference/`**(CWA 18291:2025 TRICK 的 LLM 易讀版;入口 README.md,
+  資料模型索引 `reference/data-model-catalog.md`,全文 grep `cwa18291_2025.full.md`)。
+  此規則已寫入根目錄 `CLAUDE.md`,不要憑記憶回答法規問題。
+- 已完成 37 條「法規 × 現有功能」差距分析,收斂為 6 份文件:
+  `docs/CWA_ALIGNMENT_OVERVIEW.md`(索引+實作順序)+ `docs/PLAN_CWA_{1_DATA_MODEL,
+  2_TRACEABILITY_EVENTS,3_SUSTAINABILITY,4_DISCLOSURE_DPP,5_WORKFLOW_UX}.md`。
+  計畫 1、4 逐條經對抗式驗證;計畫 4 §D4 是**已驗證的真 bug**(法規視角放行值來自平台目錄
+  `catVal` 而非工廠送回,platform.html:541)。
+
 ## 重要檔案索引
 - 計畫文件:`docs/PLATFORM_NFT_MINT_PLAN.md`(第 8 項的完整計畫,含原始碼行號參照)。
 - 合約:`contracts/SimpleDPPNFT.sol`(`mintDPP(to,tokenURI_,metadataHash,schemaHash,orderHash,stage,previousTokenId)`,emit `DPPMinted`)。

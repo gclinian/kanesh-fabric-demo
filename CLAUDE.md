@@ -1,5 +1,13 @@
 # Kanesh Fabric DPP — project notes
 
+## Regulations / standards lookup
+Whenever you need to read, cite, or check regulation/standard content (CWA 18291,
+TRICK, textile DPP data model, ESPR-related requirements), ALWAYS consult
+**`docs/cwa18291-reference/`** — the curated LLM-readable knowledge base.
+Start at its `README.md`; data-model index in `reference/data-model-catalog.md`;
+full-text grep fallback in `cwa18291_2025.full.md`. Never answer regulation
+questions from memory alone.
+
 ## Design System
 Always read **DESIGN.md** before making any visual or UI decision.
 Direction is **Industrial-Archival**: warm paper + ink + one deep petrol accent,
